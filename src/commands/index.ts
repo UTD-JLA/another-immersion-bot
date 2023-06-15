@@ -13,5 +13,6 @@ export interface ICommand {
 }
 
 import LogCommand from './log';
+import LeaderboardCommand from './leaderboard';
 
-export {LogCommand};
+export {LogCommand, LeaderboardCommand};

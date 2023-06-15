@@ -1,7 +1,7 @@
 import {Client, Events, GatewayIntentBits, REST, Routes} from 'discord.js';
 import {connect} from 'mongoose';
 import {Config} from './config';
-import {ICommand, LogCommand} from './commands';
+import {ICommand, LeaderboardCommand, LogCommand} from './commands';
 import AutocompletionService from './autocomplete';
 
 const config = Config.fromJsonFile(
@@ -9,7 +9,7 @@ const config = Config.fromJsonFile(
 );
 
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds],
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
 }) as Client & {commands: ICommand[]};
 
 const rest = new REST().setToken(config.token);
@@ -58,7 +58,10 @@ client.on(Events.InteractionCreate, async interaction => {
     client.login(config.token),
   ]);
 
-  client.commands = [new LogCommand(autocompleteService)];
+  client.commands = [
+    new LogCommand(autocompleteService),
+    new LeaderboardCommand(),
+  ];
 
   const clientId = client.application?.id;
 
