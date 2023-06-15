@@ -26,6 +26,15 @@
       "date": {
         "name": "日付",
         "description": "いつ視聴したか、いつ読んだかを入力します。"
+      },
+      "unit": {
+        "name": "単位",
+        "description": "活動の単位を選択します。",
+        "options": {
+          "episode": "話",
+          "character": "文字",
+          "minute": "分 (デフォルト)"
+        }
       }
     }
   }

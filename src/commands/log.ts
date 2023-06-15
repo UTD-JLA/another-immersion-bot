@@ -75,6 +75,36 @@ export default class LogCommand implements ICommand {
         )
         .setDescriptionLocalization('ja', JA.log.options.date.description)
         .setRequired(false)
+    )
+    .addStringOption(option =>
+      option
+        .setName('unit')
+        .setNameLocalization('ja', JA.log.options.unit.name)
+        .setDescription('Unit of the duration')
+        .addChoices(
+          {
+            name: 'Episodes',
+            value: 'episode',
+            name_localizations: {
+              ja: JA.log.options.unit.options.episode,
+            },
+          },
+          {
+            name: 'Characters',
+            value: 'character',
+            name_localizations: {
+              ja: JA.log.options.unit.options.character,
+            },
+          },
+          {
+            name: 'Minute (default)',
+            value: 'minute',
+            name_localizations: {
+              ja: JA.log.options.unit.options.minute,
+            },
+          }
+        )
+        .setRequired(false)
     );
 
   public static TIME_REGEX = /^(\d{1,2}):(\d{1,2})$/;
@@ -85,6 +115,7 @@ export default class LogCommand implements ICommand {
     const name = interaction.options.getString('name', true);
     const url = interaction.options.getString('url', false);
     const dateString = interaction.options.getString('date', false);
+    const unit = interaction.options.getString('unit', false);
 
     // TODO: Handle timezones (let each server set their default timezone)
     let dateTime = dateString ? Date.parse(dateString) : Date.now();
@@ -123,10 +154,21 @@ export default class LogCommand implements ICommand {
       ephemeral: true,
     });
 
+    let convertedDuration = duration;
+
+    if (unit === 'episode') {
+      convertedDuration *= 24;
+    } else if (unit === 'character') {
+      // 350 characters per minute
+      convertedDuration = Math.round(duration / 350);
+    } else if (unit === 'minute') {
+      // Do nothing
+    }
+
     await Activity.create({
       userId: interaction.user.id,
       type,
-      duration,
+      duration: convertedDuration,
       name,
       url,
       date,
