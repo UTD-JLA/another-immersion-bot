@@ -70,10 +70,14 @@ export default class LogCommand implements ICommand {
       option
         .setName('date')
         .setNameLocalization('ja', JA.log.options.date.name)
-        .setDescription('Date of the activity')
+        .setDescription(
+          'Date/time of the activity (ex. "2021-01-01", "13:00", "January 1 2021", "01 Jan 1970 00:00:00 GMT")'
+        )
         .setDescriptionLocalization('ja', JA.log.options.date.description)
         .setRequired(false)
     );
+
+  public static TIME_REGEX = /^(\d{1,2}):(\d{1,2})$/;
 
   public async execute(interaction: ChatInputCommandInteraction) {
     const type = interaction.options.getString('type', true);
@@ -81,7 +85,39 @@ export default class LogCommand implements ICommand {
     const name = interaction.options.getString('name', true);
     const url = interaction.options.getString('url', false);
     const dateString = interaction.options.getString('date', false);
-    const date = dateString ? new Date(dateString) : new Date();
+
+    // TODO: Handle timezones (let each server set their default timezone)
+    let dateTime = dateString ? Date.parse(dateString) : Date.now();
+
+    if (dateString && isNaN(dateTime)) {
+      if (!LogCommand.TIME_REGEX.test(dateString)) {
+        await interaction.reply({
+          content: 'Invalid date',
+          ephemeral: true,
+        });
+        return;
+      }
+
+      const match = LogCommand.TIME_REGEX.exec(dateString);
+      const hours = parseInt(match![1]);
+      const minutes = parseInt(match![2]);
+
+      if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+        await interaction.reply({
+          content: 'Invalid time',
+          ephemeral: true,
+        });
+        return;
+      }
+
+      const now = new Date();
+      now.setHours(hours);
+      now.setMinutes(minutes);
+      now.setSeconds(0);
+      dateTime = now.getTime();
+    }
+
+    const date = new Date(dateTime);
 
     await interaction.deferReply({
       ephemeral: true,
