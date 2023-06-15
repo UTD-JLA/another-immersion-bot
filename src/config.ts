@@ -54,6 +54,6 @@ export class Config implements IConfig {
     if (!config.autocompletionDataFile)
       errors.push(ConfigError.requiredError('autocompletionDataFile'));
 
-    return [];
+    return errors;
   }
 }
