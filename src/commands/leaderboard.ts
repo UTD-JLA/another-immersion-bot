@@ -27,10 +27,35 @@ export default class LeaderboardCommand implements ICommand {
           }
         )
     )
+    .addStringOption(option =>
+      option
+        .setName('timeframe')
+        .setDescription('Timeframe of the leaderboard')
+        .setRequired(false)
+        .addChoices(
+          {
+            name: 'Today',
+            value: 'today',
+          },
+          {
+            name: 'This week',
+            value: 'this-week',
+          },
+          {
+            name: 'This month',
+            value: 'this-month',
+          },
+          {
+            name: 'This year',
+            value: 'this-year',
+          }
+        )
+    )
     .setDMPermission(false);
 
   public async execute(interaction: ChatInputCommandInteraction) {
     const type = interaction.options.getString('type');
+    const timeframe = interaction.options.getString('timeframe');
     if (!interaction.guild) {
       await interaction.reply({
         content: 'This command can only be used in a server',
@@ -39,11 +64,16 @@ export default class LeaderboardCommand implements ICommand {
       return;
     }
 
+    await interaction.deferReply();
+
     const guildMemberIds = await interaction
       .guild!.members.fetch()
       .then(members => members.map(m => m.id));
 
     const typeMatch = type ? {type} : {};
+    const timeframeMatch = timeframe
+      ? {date: {$gte: getStartOfTimeframe(timeframe)}}
+      : {};
 
     const topMembers = <
       {_id: string; member?: GuildMember; duration: number}[]
@@ -54,6 +84,7 @@ export default class LeaderboardCommand implements ICommand {
             $in: guildMemberIds,
           },
           ...typeMatch,
+          ...timeframeMatch,
         },
       },
       {
@@ -81,7 +112,7 @@ export default class LeaderboardCommand implements ICommand {
     );
 
     if (topMembers.length === 0) {
-      await interaction.reply({
+      await interaction.editReply({
         content: 'No one has logged any activity yet',
       });
       return;
@@ -102,7 +133,27 @@ export default class LeaderboardCommand implements ICommand {
     );
     embed.setTimestamp(new Date());
     embed.setColor('#c15bfc');
-    await interaction.reply({embeds: [embed]});
+    await interaction.editReply({embeds: [embed]});
+  }
+}
+
+function getStartOfTimeframe(timeframe: string): Date {
+  const now = new Date();
+  switch (timeframe) {
+    case 'today':
+      return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    case 'this-week':
+      return new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate() - now.getDay()
+      );
+    case 'this-month':
+      return new Date(now.getFullYear(), now.getMonth());
+    case 'this-year':
+      return new Date(now.getFullYear(), 0);
+    default:
+      throw new Error(`Invalid timeframe: ${timeframe}`);
   }
 }
 
