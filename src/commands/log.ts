@@ -1,10 +1,17 @@
-import {SlashCommandBuilder, ChatInputCommandInteraction} from 'discord.js';
+import {
+  SlashCommandBuilder,
+  ChatInputCommandInteraction,
+  AutocompleteInteraction,
+} from 'discord.js';
 import {ICommand} from '.';
 import {Activity} from '../models/activity';
+import AutocompletionService, {IAutocompletionService} from '../autocomplete';
 
 const JA = require('../locales/ja.json');
 
-export default class Log implements ICommand {
+export default class LogCommand implements ICommand {
+  constructor(private readonly autocompletionService: IAutocompletionService) {}
+
   public readonly data = <SlashCommandBuilder>new SlashCommandBuilder()
     .setName('log')
     .setNameLocalization('ja', JA.log.name)
@@ -48,6 +55,7 @@ export default class Log implements ICommand {
         .setNameLocalization('ja', JA.log.options.name.name)
         .setDescription('Name of the activity')
         .setDescriptionLocalization('ja', JA.log.options.name.description)
+        .setAutocomplete(true)
         .setRequired(true)
     )
     .addStringOption(option =>
@@ -91,5 +99,21 @@ export default class Log implements ICommand {
     await interaction.editReply({
       content: 'Activity logged!',
     });
+  }
+
+  public async autocomplete(interaction: AutocompleteInteraction) {
+    const focusedValue = interaction.options.getFocused(true);
+
+    const results = await this.autocompletionService.getSuggestions(
+      focusedValue.value,
+      5
+    );
+
+    await interaction.respond(
+      results.map(result => ({
+        name: result,
+        value: result,
+      }))
+    );
   }
 }

@@ -3,6 +3,7 @@ import * as fs from 'fs';
 export interface IConfig {
   token: string;
   mongoUrl: string;
+  autocompletionDataFile: string;
 }
 
 class ConfigError extends Error {
@@ -19,10 +20,12 @@ class ConfigError extends Error {
 export class Config implements IConfig {
   constructor(
     public readonly token: string,
-    public readonly mongoUrl = 'mongodb://localhost:27017'
+    public readonly mongoUrl = 'mongodb://localhost:27017',
+    public readonly autocompletionDataFile: string
   ) {
     this.token = token;
     this.mongoUrl = mongoUrl;
+    this.autocompletionDataFile = autocompletionDataFile;
   }
 
   public static fromJsonFile(path: string): Config {
@@ -37,13 +40,19 @@ export class Config implements IConfig {
       throw new Error(`Invalid config file at ${path}: ${errors.join(', ')}`);
     }
 
-    return new Config(config.token, config.mongoUrl);
+    return new Config(
+      config.token,
+      config.mongoUrl,
+      config.autocompletionDataFile
+    );
   }
 
-  public static validate(config: IConfig): ConfigError[] {
+  public static validate(config: Partial<IConfig>): ConfigError[] {
     const errors: ConfigError[] = [];
 
     if (!config.token) errors.push(ConfigError.requiredError('token'));
+    if (!config.autocompletionDataFile)
+      errors.push(ConfigError.requiredError('autocompletionDataFile'));
 
     return [];
   }

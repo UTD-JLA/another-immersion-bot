@@ -12,6 +12,6 @@ export interface ICommand {
   ) => Promise<void>;
 }
 
-import Log from './log';
+import LogCommand from './log';
 
-export default <ICommand[]>[new Log()];
+export {LogCommand};
