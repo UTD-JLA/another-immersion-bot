@@ -53,6 +53,14 @@ export class Config implements IConfig {
     if (!config.token) errors.push(ConfigError.requiredError('token'));
     if (!config.autocompletionDataFile)
       errors.push(ConfigError.requiredError('autocompletionDataFile'));
+    else if (!fs.existsSync(config.autocompletionDataFile)) {
+      errors.push(
+        new ConfigError(
+          `File '${config.autocompletionDataFile}' does not exist`,
+          'autocompletionDataFile'
+        )
+      );
+    }
 
     return errors;
   }
