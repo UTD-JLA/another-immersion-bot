@@ -5,7 +5,7 @@ import {
 } from 'discord.js';
 import {ICommand} from '.';
 import {Activity} from '../models/activity';
-import AutocompletionService, {IAutocompletionService} from '../autocomplete';
+import {IAutocompletionService} from '../autocomplete';
 
 const JA = require('../locales/ja.json');
 
