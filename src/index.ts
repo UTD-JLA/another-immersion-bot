@@ -1,7 +1,13 @@
 import {Client, Events, GatewayIntentBits, REST, Routes} from 'discord.js';
 import {connect} from 'mongoose';
 import {Config} from './config';
-import {ICommand, LeaderboardCommand, LogCommand} from './commands';
+import {
+  ICommand,
+  LeaderboardCommand,
+  LogCommand,
+  HistoryCommand,
+  UndoCommand,
+} from './commands';
 import AutocompletionService from './autocomplete';
 
 const config = Config.fromJsonFile(
@@ -61,6 +67,8 @@ client.on(Events.InteractionCreate, async interaction => {
   client.commands = [
     new LogCommand(autocompleteService),
     new LeaderboardCommand(),
+    new HistoryCommand(),
+    new UndoCommand(),
   ];
 
   const clientId = client.application?.id;

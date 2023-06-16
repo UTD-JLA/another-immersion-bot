@@ -3,6 +3,7 @@ import {Schema, model} from 'mongoose';
 type ActivityType = 'listening' | 'reading';
 
 export interface IActivity {
+  _id?: string;
   userId: string;
   name: string;
   type: ActivityType;

@@ -14,5 +14,7 @@ export interface ICommand {
 
 import LogCommand from './log';
 import LeaderboardCommand from './leaderboard';
+import HistoryCommand from './history';
+import UndoCommand from './undo';
 
-export {LogCommand, LeaderboardCommand};
+export {LogCommand, LeaderboardCommand, HistoryCommand, UndoCommand};
