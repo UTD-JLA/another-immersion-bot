@@ -20,3 +20,15 @@ install the packages required for compilation.
 
 Execute `npm run start` to quickly compile and run the project as is. If the project is already compiled simply run `node build/index.js`.
 For development, it is quicker to run `npx tsc --watch` in the background and restart the bot using `node build/index.js` after making changes.
+
+# Todos
+
+- JA localisations for commands
+- Graphs and charts
+- Better autocomplete (allow filtering by sources such as vndb)
+- Non-logging functionality? (ex. dictionaries)
+- Efficient pagination
+- Efficient autocomplete title lookup (data is sorted but is being searched linearly)
+- Per guild channel limitations
+- Per guild localisation settings for dates and times
+- Maybe don't use mongodb
