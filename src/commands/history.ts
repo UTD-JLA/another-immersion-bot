@@ -8,7 +8,9 @@ import {
   EmbedBuilder,
   ButtonStyle,
 } from 'discord.js';
+import {injectable} from 'inversify';
 
+@injectable()
 export default class HistoryCommand implements ICommand {
   public readonly data = <SlashCommandBuilder>new SlashCommandBuilder()
     .setName('history')

@@ -1,15 +1,11 @@
+import 'reflect-metadata';
 import {Client, GatewayIntentBits, REST, Routes, Events} from 'discord.js';
 import {connect} from 'mongoose';
-import {Config} from './config';
+import {Config, IConfig} from './config';
 import {onClientReady, onInteractionCreate} from './events';
-import {
-  ICommand,
-  LeaderboardCommand,
-  LogCommand,
-  HistoryCommand,
-  UndoCommand,
-} from './commands';
-import AutocompletionService from './autocomplete';
+import commands, {ICommand} from './commands';
+import {registerServices} from './services';
+import {Container} from 'inversify';
 
 const config = Config.fromJsonFile(
   process.env['IB_CONFIG_LOCATION'] ?? 'config.json'
@@ -22,17 +18,17 @@ const client = new Client({
 const rest = new REST().setToken(config.token);
 
 (async () => {
-  const [autocompleteService] = await Promise.all([
-    AutocompletionService.fromSortedFile(config.autocompletionDataFile),
-    connect(config.mongoUrl),
-  ]);
+  const container = new Container({defaultScope: 'Singleton'});
+  container.bind<IConfig>('Config').toConstantValue(config);
+  registerServices(container);
 
-  client.commands = [
-    new LogCommand(autocompleteService),
-    new LeaderboardCommand(),
-    new HistoryCommand(),
-    new UndoCommand(),
-  ];
+  for (const command of commands) {
+    container.bind('Command').to(command).whenTargetNamed(command.name);
+  }
+
+  await connect(config.mongoUrl);
+
+  client.commands = container.getAll<ICommand>('Command');
 
   client.on(Events.ClientReady, onClientReady);
   client.on(Events.InteractionCreate, onInteractionCreate);

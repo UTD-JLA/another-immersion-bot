@@ -9,7 +9,9 @@ import {
   EmbedBuilder,
 } from 'discord.js';
 import {Document} from 'mongoose';
+import {injectable} from 'inversify';
 
+@injectable()
 export default class UndoCommand implements ICommand {
   public readonly data = <SlashCommandBuilder>new SlashCommandBuilder()
     .setName('undo')

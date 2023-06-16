@@ -6,7 +6,9 @@ import {
   GuildMember,
 } from 'discord.js';
 import {Activity} from '../models/activity';
+import {injectable} from 'inversify';
 
+@injectable()
 export default class LeaderboardCommand implements ICommand {
   public readonly data = <SlashCommandBuilder>new SlashCommandBuilder()
     .setName('leaderboard')

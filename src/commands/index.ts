@@ -12,9 +12,17 @@ export interface ICommand {
   ) => Promise<void>;
 }
 
+//eslint-disable-next-line @typescript-eslint/no-explicit-any
+type CommandConstructor = new (...args: any[]) => ICommand;
+
 import LogCommand from './log';
 import LeaderboardCommand from './leaderboard';
 import HistoryCommand from './history';
 import UndoCommand from './undo';
 
-export {LogCommand, LeaderboardCommand, HistoryCommand, UndoCommand};
+export default <CommandConstructor[]>[
+  LogCommand,
+  LeaderboardCommand,
+  HistoryCommand,
+  UndoCommand,
+];

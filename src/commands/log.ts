@@ -5,12 +5,20 @@ import {
 } from 'discord.js';
 import {ICommand} from '.';
 import {Activity} from '../models/activity';
-import {IAutocompletionService} from '../autocomplete';
+import {IAutocompletionService} from '../services';
+import {inject, injectable} from 'inversify';
 
 const JA = require('../locales/ja.json');
 
+@injectable()
 export default class LogCommand implements ICommand {
-  constructor(private readonly autocompletionService: IAutocompletionService) {}
+  private readonly _autocompleteService: IAutocompletionService;
+
+  constructor(
+    @inject('AutocompletionService') autocompleteService: IAutocompletionService
+  ) {
+    this._autocompleteService = autocompleteService;
+  }
 
   public readonly data = <SlashCommandBuilder>new SlashCommandBuilder()
     .setName('log')
@@ -182,7 +190,7 @@ export default class LogCommand implements ICommand {
   public async autocomplete(interaction: AutocompleteInteraction) {
     const focusedValue = interaction.options.getFocused(true);
 
-    const results = await this.autocompletionService.getSuggestions(
+    const results = await this._autocompleteService.getSuggestions(
       focusedValue.value,
       5
     );
