@@ -1,6 +1,7 @@
-import {Client, Events, GatewayIntentBits, REST, Routes} from 'discord.js';
+import {Client, GatewayIntentBits, REST, Routes, Events} from 'discord.js';
 import {connect} from 'mongoose';
 import {Config} from './config';
+import {onClientReady, onInteractionCreate} from './events';
 import {
   ICommand,
   LeaderboardCommand,
@@ -20,48 +21,10 @@ const client = new Client({
 
 const rest = new REST().setToken(config.token);
 
-client.on(Events.ClientReady, () => {
-  console.log('Client ready!');
-});
-
-client.on(Events.InteractionCreate, async interaction => {
-  if (interaction.isChatInputCommand()) {
-    const command = client.commands.find(
-      command => command.data.name === interaction.commandName
-    );
-
-    if (!command) return;
-
-    try {
-      await command.execute(interaction);
-    } catch (error) {
-      console.error(error);
-      await interaction.reply({
-        content: 'There was an error while executing this command!',
-        ephemeral: true,
-      });
-    }
-  } else if (interaction.isAutocomplete()) {
-    const command = client.commands.find(
-      command => command.data.name === interaction.commandName
-    );
-
-    if (!command) return;
-    if (!command.autocomplete) return;
-
-    try {
-      await command.autocomplete(interaction);
-    } catch (error) {
-      console.error(error);
-    }
-  }
-});
-
 (async () => {
   const [autocompleteService] = await Promise.all([
     AutocompletionService.fromSortedFile(config.autocompletionDataFile),
     connect(config.mongoUrl),
-    client.login(config.token),
   ]);
 
   client.commands = [
@@ -71,6 +34,10 @@ client.on(Events.InteractionCreate, async interaction => {
     new UndoCommand(),
   ];
 
+  client.on(Events.ClientReady, onClientReady);
+  client.on(Events.InteractionCreate, onInteractionCreate);
+
+  await client.login(config.token);
   const clientId = client.application?.id;
 
   if (!clientId) {
