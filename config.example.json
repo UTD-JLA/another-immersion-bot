@@ -1,0 +1,5 @@
+{
+  "token": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+  "mongoUrl": "mongodb+srv://username:password@cluster0.xxxxxx.mongodb.net/?retryWrites=true&w=majority",
+  "autocompletionDataFile": "./data/anime_titles.txt"
+}
