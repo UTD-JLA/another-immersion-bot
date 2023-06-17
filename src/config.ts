@@ -5,7 +5,6 @@ export interface IConfig {
   materialsPath: string;
   token: string;
   mongoUrl: string;
-  autocompletionDataFile: string;
   chartServiceUrl: string;
 }
 
@@ -23,9 +22,9 @@ class ConfigError extends Error {
 export class Config implements IConfig {
   constructor(
     public readonly token: string,
-    public readonly mongoUrl = 'mongodb://localhost:27017',
-    public readonly materialsPath = __dirname + '/../data',
     public readonly logLevel = 'info',
+    public readonly materialsPath = __dirname + '/../data',
+    public readonly mongoUrl = 'mongodb://localhost:27017',
     public readonly chartServiceUrl = 'http://127.0.0.1:5301/bar'
   ) {
     this.token = token;
@@ -75,11 +74,11 @@ export class Config implements IConfig {
     }
 
     return new Config(
-      config.token ?? defaults.token,
-      config.mongoUrl ?? defaults.mongoUrl,
-      config.chartServiceUrl ?? defaults.chartServiceUrl,
-      config.materialsPath ?? defaults.materialsPath,
-      config.logLevel ?? defaults.logLevel
+      config.token,
+      config.logLevel,
+      config.materialsPath,
+      config.mongoUrl,
+      config.chartServiceUrl
     );
   }
 

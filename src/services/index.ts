@@ -10,14 +10,13 @@ import MaterialSourceService from '../services/impl/materialSource';
 import LoggerService from '../services/impl/logger';
 import ChartService from '../services/impl/chart';
 
-
 export function registerServices(container: Container) {
   container
     .bind<IAutocompletionService>('AutocompletionService')
     .to(AutocompletionService);
 
   container.bind<IChartService>('ChartService').to(ChartService);
-  
+
   container
     .bind<IMaterialSourceService>('MaterialSourceService')
     .to(MaterialSourceService);
@@ -35,5 +34,5 @@ export {
   IAutocompletionService,
   IMaterialSourceService,
   ILoggerService,
-  ChartService,
+  IChartService,
 };

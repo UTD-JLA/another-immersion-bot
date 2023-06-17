@@ -27,8 +27,7 @@
     "discord.js": "^14.11.0",
     "inversify": "^6.0.1",
     "mongoose": "^7.3.0",
-    "reflect-metadata": "^0.1.13",
-    "winston": "^3.9.0"
+    "winston": "^3.9.0",
     "reflect-metadata": "^0.1.13"
   },
   "engines": {
