@@ -1,4 +1,5 @@
 # Setup
+#### [(or skip to Docker)](#docker)
 ## Requirements
 1. Node.js (>=16.9.0) and NPM 
 2. MongoDB server
