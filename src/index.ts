@@ -4,7 +4,11 @@ import {connect} from 'mongoose';
 import {Config, IConfig} from './config';
 import {onClientReady, onInteractionCreate} from './events';
 import commands, {ICommand} from './commands';
-import {registerServices} from './services';
+import {
+  registerServices,
+  IMaterialSourceService,
+  ILoggerService,
+} from './services';
 import {Container} from 'inversify';
 
 const config = Config.fromJsonFile(
@@ -12,14 +16,15 @@ const config = Config.fromJsonFile(
   {
     token: process.env['IB_TOKEN'],
     mongoUrl: process.env['IB_MONGO_URL'],
-    autocompletionDataFile: process.env['IB_AUTOCOMPLETION_DATA_FILE'],
     chartServiceUrl: process.env['IB_CHART_SERVICE_URL'],
+    materialsPath: process.env['IB_MATERIALS_PATH'],
+    logLevel: process.env['IB_LOG_LEVEL'],
   }
 );
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
-}) as Client & {commands: ICommand[]};
+}) as Client & {container: Container};
 
 const rest = new REST().setToken(config.token);
 
@@ -28,13 +33,24 @@ const rest = new REST().setToken(config.token);
   container.bind<IConfig>('Config').toConstantValue(config);
   registerServices(container);
 
+  const logger = container.get<ILoggerService>('LoggerService');
+
   for (const command of commands) {
+    logger.log(`Registering command ${command.name}`);
     container.bind('Command').to(command).whenTargetNamed(command.name);
   }
 
+  logger.log('Connecting to MongoDB');
   await connect(config.mongoUrl);
 
-  client.commands = container.getAll<ICommand>('Command');
+  const materialSourceService = container.get<IMaterialSourceService>(
+    'MaterialSourceService'
+  );
+
+  logger.log('Checking for material source updates');
+  await materialSourceService.checkForUpdates();
+
+  client.container = container;
 
   client.on(Events.ClientReady, onClientReady);
   client.on(Events.InteractionCreate, onInteractionCreate);
@@ -47,6 +63,6 @@ const rest = new REST().setToken(config.token);
   }
 
   await rest.put(Routes.applicationCommands(clientId), {
-    body: client.commands.map(command => command.data.toJSON()),
+    body: container.getAll<ICommand>('Command').map(command => command.data),
   });
 })();

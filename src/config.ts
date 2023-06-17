@@ -1,6 +1,8 @@
 import * as fs from 'fs';
 
 export interface IConfig {
+  logLevel: string;
+  materialsPath: string;
   token: string;
   mongoUrl: string;
   autocompletionDataFile: string;
@@ -22,12 +24,14 @@ export class Config implements IConfig {
   constructor(
     public readonly token: string,
     public readonly mongoUrl = 'mongodb://localhost:27017',
-    public readonly autocompletionDataFile: string,
+    public readonly materialsPath = __dirname + '/../data',
+    public readonly logLevel = 'info',
     public readonly chartServiceUrl = 'http://127.0.0.1:5301/bar'
   ) {
     this.token = token;
     this.mongoUrl = mongoUrl;
-    this.autocompletionDataFile = autocompletionDataFile;
+    this.materialsPath = materialsPath;
+    this.logLevel = logLevel;
     this.chartServiceUrl = chartServiceUrl;
   }
 
@@ -73,8 +77,9 @@ export class Config implements IConfig {
     return new Config(
       config.token ?? defaults.token,
       config.mongoUrl ?? defaults.mongoUrl,
-      config.autocompletionDataFile ?? defaults.autocompletionDataFile,
-      config.chartServiceUrl ?? defaults.chartServiceUrl
+      config.chartServiceUrl ?? defaults.chartServiceUrl,
+      config.materialsPath ?? defaults.materialsPath,
+      config.logLevel ?? defaults.logLevel
     );
   }
 
@@ -82,16 +87,6 @@ export class Config implements IConfig {
     const errors: ConfigError[] = [];
 
     if (!config.token) errors.push(ConfigError.requiredError('token'));
-    if (!config.autocompletionDataFile)
-      errors.push(ConfigError.requiredError('autocompletionDataFile'));
-    else if (!fs.existsSync(config.autocompletionDataFile)) {
-      errors.push(
-        new ConfigError(
-          `File '${config.autocompletionDataFile}' does not exist`,
-          'autocompletionDataFile'
-        )
-      );
-    }
 
     return errors;
   }

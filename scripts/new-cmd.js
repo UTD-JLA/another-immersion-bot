@@ -36,7 +36,14 @@ if (!fs.existsSync(commandDir)) {
 }
 
 if (fs.existsSync(fileName)) {
-  throw new Error(`Command ${name} already exists`);
+  throw new Error(`Command '${name}' already exists`);
 }
 
 fs.writeFileSync(fileName, fileContent);
+console.log(`Command '${name}' created`);
+console.log(
+  `Don't forget to add it to the list: vscode://file/${__dirname.replace(
+    '/scripts',
+    '/src/commands/index.ts'
+  )}`
+);

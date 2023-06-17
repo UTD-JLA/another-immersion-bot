@@ -18,3 +18,14 @@ export interface IChartService {
     grid: boolean
   ): Promise<Stream>;
 }
+
+export interface IMaterialSourceService {
+  checkForUpdates(): Promise<void>;
+}
+
+export interface ILoggerService {
+  log(message: string, meta?: any): void;
+  error(message: string, meta?: any): void;
+  warn(message: string, meta?: any): void;
+  child(meta: any): ILoggerService;
+}

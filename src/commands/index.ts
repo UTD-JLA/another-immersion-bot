@@ -20,6 +20,7 @@ import LeaderboardCommand from './leaderboard';
 import HistoryCommand from './history';
 import UndoCommand from './undo';
 import ChartCommand from './chart';
+import ExportCommand from './export';
 
 export default <CommandConstructor[]>[
   LogCommand,
@@ -27,4 +28,5 @@ export default <CommandConstructor[]>[
   HistoryCommand,
   UndoCommand,
   ChartCommand,
+  ExportCommand,
 ];

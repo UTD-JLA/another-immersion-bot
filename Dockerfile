@@ -14,6 +14,7 @@ RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - &&\
   apt-get install -y nodejs
 
 # Copy app
+COPY ./data /app/data
 COPY ./src /app/src
 COPY ./package.json /app/package.json
 COPY ./package-lock.json /app/package-lock.json

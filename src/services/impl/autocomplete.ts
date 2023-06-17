@@ -1,33 +1,30 @@
-import {readFileSync} from 'fs';
 import {injectable} from 'inversify';
 import {IAutocompletionService} from '../interfaces';
-import {IConfig} from '../../config';
-import {inject} from 'inversify';
+import {Material} from '../../models/material';
 
 @injectable()
 export default class AutocompletionService implements IAutocompletionService {
-  private readonly _sortedData: string[];
+  public async getSuggestions(
+    input: string,
+    limit: number,
+    scope?: string
+  ): Promise<string[]> {
+    const typeFilter = scope ? {type: scope} : {};
 
-  constructor(@inject('Config') config: IConfig) {
-    this._sortedData = readFileSync(
-      config.autocompletionDataFile,
-      'utf8'
-    ).split('\n');
-  }
+    const suggestions = await Material.find({
+      $text: {
+        $search: input,
+      },
+      ...typeFilter,
+    })
+      .sort({
+        score: {
+          $meta: 'textScore',
+        },
+      })
+      .limit(limit)
+      .exec();
 
-  public getSuggestions(input: string, limit: number): Promise<string[]> {
-    const suggestions: string[] = [];
-
-    for (const data of this._sortedData) {
-      if (data.toLowerCase().startsWith(input.toLowerCase())) {
-        suggestions.push(data);
-      }
-
-      if (suggestions.length >= limit) {
-        break;
-      }
-    }
-
-    return Promise.resolve(suggestions);
+    return suggestions.map(suggestion => suggestion.title);
   }
 }
