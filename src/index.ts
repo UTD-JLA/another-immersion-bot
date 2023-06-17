@@ -8,7 +8,12 @@ import {registerServices} from './services';
 import {Container} from 'inversify';
 
 const config = Config.fromJsonFile(
-  process.env['IB_CONFIG_LOCATION'] ?? 'config.json'
+  process.env['IB_CONFIG_LOCATION'] ?? 'config.json',
+  {
+    token: process.env['IB_TOKEN'],
+    mongoUrl: process.env['IB_MONGO_URL'],
+    autocompletionDataFile: process.env['IB_AUTOCOMPLETION_DATA_FILE'],
+  }
 );
 
 const client = new Client({

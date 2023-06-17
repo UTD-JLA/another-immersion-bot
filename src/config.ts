@@ -7,12 +7,12 @@ export interface IConfig {
 }
 
 class ConfigError extends Error {
-  constructor(message: string, public readonly field?: string) {
+  constructor(message: string, public readonly field: keyof IConfig) {
     super(message);
     this.name = 'ConfigError';
   }
 
-  public static requiredError(field: string): ConfigError {
+  public static requiredError(field: keyof IConfig): ConfigError {
     return new ConfigError(`Field '${field}' is required`, field);
   }
 }
@@ -28,12 +28,25 @@ export class Config implements IConfig {
     this.autocompletionDataFile = autocompletionDataFile;
   }
 
-  public static fromJsonFile(path: string): Config {
-    if (!fs.existsSync(path)) {
-      throw new Error(`Config file not found at ${path}`);
+  public static fromJsonFile(
+    path: string,
+    defaults: Partial<IConfig> = {}
+  ): Config {
+    const defaultsErrors = Config.validate(defaults);
+    const defaultsAreSufficient = defaultsErrors.length === 0;
+
+    if (!fs.existsSync(path) && !defaultsAreSufficient) {
+      throw new Error(
+        `Config file not found at ${path} and insufficient defaults provided: ${defaultsErrors.join(
+          ', '
+        )}`
+      );
     }
 
-    const config = JSON.parse(fs.readFileSync(path, 'utf8'));
+    const config = {
+      ...defaults,
+      ...JSON.parse(fs.readFileSync(path, 'utf8')),
+    };
     const errors = Config.validate(config);
 
     if (errors.length > 0) {
@@ -41,9 +54,9 @@ export class Config implements IConfig {
     }
 
     return new Config(
-      config.token,
-      config.mongoUrl,
-      config.autocompletionDataFile
+      config.token ?? defaults.token,
+      config.mongoUrl ?? defaults.mongoUrl,
+      config.autocompletionDataFile ?? defaults.autocompletionDataFile
     );
   }
 
