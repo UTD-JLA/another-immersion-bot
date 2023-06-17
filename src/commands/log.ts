@@ -2,6 +2,7 @@ import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
   AutocompleteInteraction,
+  EmbedBuilder,
 } from 'discord.js';
 import {ICommand} from '.';
 import {Activity} from '../models/activity';
@@ -173,7 +174,7 @@ export default class LogCommand implements ICommand {
       // Do nothing
     }
 
-    await Activity.create({
+    const activity = await Activity.create({
       userId: interaction.user.id,
       type,
       duration: convertedDuration,
@@ -182,8 +183,13 @@ export default class LogCommand implements ICommand {
       date,
     });
 
+    const embed = new EmbedBuilder()
+      .setTitle('Activity logged!')
+      .setFooter({text: `ID: ${activity.id}`})
+      .setTimestamp(activity.date);
+
     await interaction.editReply({
-      content: 'Activity logged!',
+      embeds: [embed],
     });
   }
 
