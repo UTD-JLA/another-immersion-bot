@@ -4,6 +4,7 @@ export interface IConfig {
   token: string;
   mongoUrl: string;
   autocompletionDataFile: string;
+  chartServiceUrl: string;
 }
 
 class ConfigError extends Error {
@@ -21,11 +22,13 @@ export class Config implements IConfig {
   constructor(
     public readonly token: string,
     public readonly mongoUrl = 'mongodb://localhost:27017',
-    public readonly autocompletionDataFile: string
+    public readonly autocompletionDataFile: string,
+    public readonly chartServiceUrl = 'http://py-server:5301/bar'
   ) {
     this.token = token;
     this.mongoUrl = mongoUrl;
     this.autocompletionDataFile = autocompletionDataFile;
+    this.chartServiceUrl = chartServiceUrl;
   }
 
   public static fromJsonFile(
