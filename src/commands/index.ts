@@ -19,10 +19,12 @@ import LogCommand from './log';
 import LeaderboardCommand from './leaderboard';
 import HistoryCommand from './history';
 import UndoCommand from './undo';
+import ExportCommand from './export';
 
 export default <CommandConstructor[]>[
   LogCommand,
   LeaderboardCommand,
   HistoryCommand,
   UndoCommand,
+  ExportCommand,
 ];
