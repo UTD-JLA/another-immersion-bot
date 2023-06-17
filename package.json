@@ -12,7 +12,8 @@
     "prepare": "npm run compile",
     "pretest": "npm run compile",
     "posttest": "npm run lint",
-    "start": "npm run compile && node build/index.js"
+    "start": "npm run compile && node build/index.js",
+    "new-cmd": "node scripts/new-cmd.js"
   },
   "author": "",
   "license": "ISC",
