@@ -13,6 +13,7 @@ const config = Config.fromJsonFile(
     token: process.env['IB_TOKEN'],
     mongoUrl: process.env['IB_MONGO_URL'],
     autocompletionDataFile: process.env['IB_AUTOCOMPLETION_DATA_FILE'],
+    chartServiceUrl: process.env['IB_CHART_SERVICE_URL'],
   }
 );
 

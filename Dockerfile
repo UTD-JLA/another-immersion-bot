@@ -31,6 +31,7 @@ RUN npm run compile
 # Set environment variables
 ENV IB_MONGO_URL=mongodb://db:27017
 ENV IB_AUTOCOMPLETION_DATA_FILE=/app/data/acdata.txt
+ENV IB_CHART_SERVICE_URL=http://py-server:5301/bar
 
 # Start
 CMD ["node", "./build/index.js"]

@@ -23,7 +23,7 @@ export class Config implements IConfig {
     public readonly token: string,
     public readonly mongoUrl = 'mongodb://localhost:27017',
     public readonly autocompletionDataFile: string,
-    public readonly chartServiceUrl = 'http://py-server:5301/bar'
+    public readonly chartServiceUrl = 'http://127.0.0.1:5301/bar'
   ) {
     this.token = token;
     this.mongoUrl = mongoUrl;
@@ -73,7 +73,8 @@ export class Config implements IConfig {
     return new Config(
       config.token ?? defaults.token,
       config.mongoUrl ?? defaults.mongoUrl,
-      config.autocompletionDataFile ?? defaults.autocompletionDataFile
+      config.autocompletionDataFile ?? defaults.autocompletionDataFile,
+      config.chartServiceUrl ?? defaults.chartServiceUrl
     );
   }
 
