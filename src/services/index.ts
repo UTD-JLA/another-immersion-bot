@@ -3,15 +3,19 @@ import {
   IAutocompletionService,
   IMaterialSourceService,
   ILoggerService,
+  IChartService,
 } from '../services/interfaces';
 import AutocompletionService from '../services/impl/autocomplete';
 import MaterialSourceService from '../services/impl/materialSource';
 import LoggerService from '../services/impl/logger';
+import ChartService from '../services/impl/chart';
 
 export function registerServices(container: Container) {
   container
     .bind<IAutocompletionService>('AutocompletionService')
     .to(AutocompletionService);
+
+  container.bind<IChartService>('ChartService').to(ChartService);
 
   container
     .bind<IMaterialSourceService>('MaterialSourceService')
@@ -26,4 +30,9 @@ export function registerServices(container: Container) {
   });
 }
 
-export {IAutocompletionService, IMaterialSourceService, ILoggerService};
+export {
+  IAutocompletionService,
+  IMaterialSourceService,
+  ILoggerService,
+  IChartService,
+};

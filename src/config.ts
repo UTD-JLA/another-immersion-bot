@@ -5,6 +5,7 @@ export interface IConfig {
   materialsPath: string;
   token: string;
   mongoUrl: string;
+  chartServiceUrl: string;
 }
 
 class ConfigError extends Error {
@@ -21,14 +22,16 @@ class ConfigError extends Error {
 export class Config implements IConfig {
   constructor(
     public readonly token: string,
-    public readonly mongoUrl = 'mongodb://localhost:27017',
+    public readonly logLevel = 'info',
     public readonly materialsPath = __dirname + '/../data',
-    public readonly logLevel = 'info'
+    public readonly mongoUrl = 'mongodb://localhost:27017',
+    public readonly chartServiceUrl = 'http://127.0.0.1:5301/bar'
   ) {
     this.token = token;
     this.mongoUrl = mongoUrl;
     this.materialsPath = materialsPath;
     this.logLevel = logLevel;
+    this.chartServiceUrl = chartServiceUrl;
   }
 
   public static fromJsonFile(
@@ -71,10 +74,11 @@ export class Config implements IConfig {
     }
 
     return new Config(
-      config.token ?? defaults.token,
-      config.mongoUrl ?? defaults.mongoUrl,
-      config.materialsPath ?? defaults.materialsPath,
-      config.logLevel ?? defaults.logLevel
+      config.token,
+      config.logLevel,
+      config.materialsPath,
+      config.mongoUrl,
+      config.chartServiceUrl
     );
   }
 

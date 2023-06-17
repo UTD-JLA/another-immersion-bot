@@ -7,3 +7,9 @@ services:
     image: mongo
     ports:
       - "27017:27017"
+  py-server:
+    build:
+      context: ./py-server
+      dockerfile: Dockerfile
+    ports:
+      - "5301:5301"

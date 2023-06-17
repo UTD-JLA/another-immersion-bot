@@ -5,9 +5,9 @@ RUN apt-get install -y curl
 RUN apt-get install -y jq
 
 # Install data file(s)
-RUN mkdir -p /app/data
-ADD https://raw.githubusercontent.com/manami-project/anime-offline-database/master/anime-offline-database-minified.json anime-offline-database-minified.json
-RUN cat anime-offline-database-minified.json | jq -r '.data[] | .title' > /app/data/acdata.txt
+# RUN mkdir -p /app/data
+# ADD https://raw.githubusercontent.com/manami-project/anime-offline-database/master/anime-offline-database-minified.json anime-offline-database-minified.json
+# RUN cat anime-offline-database-minified.json | jq -r '.data[] | .title' > /app/data/acdata.txt
 
 # Install node lts/hydrogen
 RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - &&\
@@ -32,6 +32,7 @@ RUN npm run compile
 # Set environment variables
 ENV IB_MONGO_URL=mongodb://db:27017
 ENV IB_AUTOCOMPLETION_DATA_FILE=/app/data/acdata.txt
+ENV IB_CHART_SERVICE_URL=http://py-server:5301/bar
 
 # Start
 CMD ["node", "./build/index.js"]

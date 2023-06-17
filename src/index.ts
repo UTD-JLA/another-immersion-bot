@@ -16,6 +16,7 @@ const config = Config.fromJsonFile(
   {
     token: process.env['IB_TOKEN'],
     mongoUrl: process.env['IB_MONGO_URL'],
+    chartServiceUrl: process.env['IB_CHART_SERVICE_URL'],
     materialsPath: process.env['IB_MATERIALS_PATH'],
     logLevel: process.env['IB_LOG_LEVEL'],
   }

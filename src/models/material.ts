@@ -22,6 +22,7 @@ const schema = new Schema<IMaterial>({
   title: {
     type: String,
     required: true,
+    text: true,
   },
   type: {
     type: String,
