@@ -43,9 +43,23 @@ export class Config implements IConfig {
       );
     }
 
+    let fileConfig;
+
+    try {
+      fileConfig = JSON.parse(fs.readFileSync(path, 'utf8'));
+    } catch (e) {
+      if (!defaultsAreSufficient) {
+        throw new Error(
+          `Config file at ${path} could not be parsed and insufficient defaults provided: ${defaultsErrors.join(
+            ', '
+          )}`
+        );
+      }
+    }
+
     const config = {
       ...defaults,
-      ...JSON.parse(fs.readFileSync(path, 'utf8')),
+      ...fileConfig,
     };
     const errors = Config.validate(config);
 
