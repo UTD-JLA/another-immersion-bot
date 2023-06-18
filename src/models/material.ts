@@ -1,4 +1,4 @@
-import {Schema, model} from 'mongoose';
+import {Schema, model, ObjectId} from 'mongoose';
 
 export enum MaterialType {
   Anime = 'anime',
@@ -11,7 +11,7 @@ export enum MaterialLanguage {
 }
 
 export interface IMaterial {
-  _id?: string;
+  _id?: ObjectId;
   title: string;
   type: MaterialType;
   language: MaterialLanguage;

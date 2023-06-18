@@ -1,9 +1,9 @@
-import {Schema, model} from 'mongoose';
+import {Schema, model, ObjectId} from 'mongoose';
 
 type ActivityType = 'listening' | 'reading';
 
 export interface IActivity {
-  _id?: string;
+  _id?: ObjectId;
   userId: string;
   name: string;
   type: ActivityType;
