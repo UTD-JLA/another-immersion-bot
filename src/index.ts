@@ -40,7 +40,7 @@ const rest = new REST().setToken(config.token);
     container.bind('Command').to(command).whenTargetNamed(command.name);
   }
 
-  logger.log('Connecting to MongoDB');
+  logger.log(`Connecting to MongoDB at ${config.mongoUrl}`);
   await connect(config.mongoUrl);
 
   const materialSourceService = container.get<IMaterialSourceService>(

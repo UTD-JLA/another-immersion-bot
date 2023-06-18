@@ -1,5 +1,5 @@
 import {injectable, inject} from 'inversify';
-import {IChartService} from '../interfaces';
+import {IChartService, ILoggerService} from '../interfaces';
 import {IConfig} from '../../config';
 import {Stream} from 'stream';
 import {request} from 'http';
@@ -7,10 +7,16 @@ import {request} from 'http';
 @injectable()
 export default class ChartService implements IChartService {
   private readonly _url: URL;
+  private readonly _logger: ILoggerService;
 
-  constructor(@inject('Config') config: IConfig) {
+  constructor(
+    @inject('Config') config: IConfig,
+    @inject('LoggerService') logger: ILoggerService
+  ) {
     this._url = new URL(config.chartServiceUrl);
-    console.log(`Chart service URL: ${this._url}`);
+    this._logger = logger;
+
+    this._logger.log(`Chart service URL: ${this._url}`);
   }
 
   public getChartPng(
