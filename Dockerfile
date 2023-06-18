@@ -2,12 +2,9 @@ FROM debian:bullseye-slim
 
 RUN apt-get update
 RUN apt-get install -y curl
-RUN apt-get install -y jq
 
-# Install data file(s)
-# RUN mkdir -p /app/data
-# ADD https://raw.githubusercontent.com/manami-project/anime-offline-database/master/anime-offline-database-minified.json anime-offline-database-minified.json
-# RUN cat anime-offline-database-minified.json | jq -r '.data[] | .title' > /app/data/acdata.txt
+RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp
+RUN chmod a+rx /usr/local/bin/yt-dlp
 
 # Install node lts/hydrogen
 RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - &&\

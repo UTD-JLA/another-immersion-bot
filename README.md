@@ -5,6 +5,7 @@
 2. MongoDB server
 3. Discord bot application (with privilaged GuildMembers intent)
 4. Python3
+5. yt-dlp
 
 ## Config
 There should either be a file `config.json` in your CWD or you should set the environment variable `IB_CONFIG_LOCATION=/some/path/config.json`.
