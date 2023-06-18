@@ -26,12 +26,19 @@ export default class HistoryCommand implements ICommand {
         .setName('show-ids')
         .setDescription('Show the ids of the activities')
         .setRequired(false)
+    )
+    .addBooleanOption(option =>
+      option
+        .setName('simple')
+        .setDescription('Display the history in a simple format')
+        .setRequired(false)
     );
 
   public async execute(interaction: ChatInputCommandInteraction) {
     const userId =
       interaction.options.getUser('user')?.id ?? interaction.user.id;
     const showIds = interaction.options.getBoolean('show-ids') ?? false;
+    const simple = interaction.options.getBoolean('simple') ?? false;
 
     // TODO: Do not fetch all activities at once
     const activities = await Activity.find({userId}).sort({date: -1});
@@ -49,7 +56,8 @@ export default class HistoryCommand implements ICommand {
     const previousButton = new ButtonBuilder()
       .setCustomId('previous')
       .setLabel('Previous')
-      .setStyle(ButtonStyle.Secondary);
+      .setStyle(ButtonStyle.Secondary)
+      .setDisabled(true);
 
     const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
       previousButton,
@@ -57,10 +65,13 @@ export default class HistoryCommand implements ICommand {
     );
 
     let page = 0;
-    const nPages = Math.ceil(activities.length / 6);
-    const pageSize = 6;
+    const pageSize = simple ? 10 : 6;
+    const nPages = Math.ceil(activities.length / pageSize);
+    const createEmbed = simple
+      ? HistoryCommand._createSimpleEmbed
+      : HistoryCommand._createEmbed;
 
-    let embed = HistoryCommand._createEmbed(
+    let embed = createEmbed(
       activities.slice(0, pageSize),
       showIds,
       page,
@@ -69,8 +80,12 @@ export default class HistoryCommand implements ICommand {
 
     const response = await interaction.reply({
       embeds: [embed],
-      components: [row],
+      components: nPages > 1 ? [row] : [],
     });
+
+    if (nPages <= 1) {
+      return;
+    }
 
     const collector = response.createMessageComponentCollector({
       filter: i => i.user.id === interaction.user.id,
@@ -92,24 +107,51 @@ export default class HistoryCommand implements ICommand {
       }
 
       if (page * pageSize + pageSize > activities.length) {
-        page = Math.floor(activities.length / pageSize);
+        page = nPages - 1;
       }
 
       const startIndex = page * pageSize;
       const endIndex = Math.min(startIndex + pageSize, activities.length);
 
-      embed = HistoryCommand._createEmbed(
+      embed = createEmbed(
         activities.slice(startIndex, endIndex),
         showIds,
         page,
         nPages
       );
 
+      previousButton.setDisabled(page === 0);
+      nextButton.setDisabled(page === nPages - 1);
+
       await i.update({
         embeds: [embed],
         components: [row],
       });
     });
+  }
+
+  private static _createSimpleEmbed(
+    activities: IActivity[],
+    showIds: boolean,
+    page: number,
+    nPages: number
+  ): EmbedBuilder {
+    const embed = new EmbedBuilder()
+      .setTitle('History')
+      .setDescription(
+        activities
+          .map(
+            activity =>
+              `${activity.date.toISOString().slice(0, 10)} - ${
+                activity.name
+              } (${activity.type}) for ${activity.duration} minutes` +
+              (showIds ? ` <${activity._id}>` : '')
+          )
+          .join('\n')
+      )
+      .setFooter({text: `Page ${page + 1} of ${nPages}`});
+
+    return embed;
   }
 
   private static _createEmbed(
