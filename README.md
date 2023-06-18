@@ -8,13 +8,21 @@
 
 ## Config
 There should either be a file `config.json` in your CWD or you should set the environment variable `IB_CONFIG_LOCATION=/some/path/config.json`.
+Individual variables can be set by setting `IB_SOME_VAR` (ex. `IB_MONGO_URL`, `IB_CHART_SERVICE_URL`, etc). Variables from the config file
+will precede environment variables.
 Current config variables are as follows:
 
-Name |  Description | Required
------|--------------|---------|
-mongoUrl | The URI used to connect to the database | [x]
-token | Discord bot token | [x]
-autocompletionDataFile | The path of a text file containing new-line seperated titles of anime/manga/etc. to be used for autocompletion | [x]
+Name |  Description | Default | Required
+-----|--------------|---------|---------|
+mongoUrl | The URI used to connect to the database | mongodb://localhost:27017 | Yes
+token | Discord bot token | N/A | Yes
+chartServiceUrl | URL of http server that generated chart PNG files | http://127.0.0.1:5301/bar | Works but returns error response when /chart is used
+materialsPath | Path to folder containing autocomplete titles | Provided data folder  | No
+logLevel | Level to set the logging service | info | No
+
+#### materialsPath
+Files in this directory should be in the format LANG.TYPE.optional-stuff and should be a list of autocomplete entries seperated by a new-line character.
+View the /data folder as an example.
 
 ## Running
 Use `npm i` to install the packages required for running the project after it's been compiled. For development, run `npm i -D` to also
