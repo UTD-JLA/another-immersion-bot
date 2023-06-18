@@ -121,10 +121,14 @@ export default class LogCommand implements ICommand {
   public async execute(interaction: ChatInputCommandInteraction) {
     const type = interaction.options.getString('type', true);
     const duration = interaction.options.getNumber('duration', true);
-    const name = interaction.options.getString('name', true);
     const url = interaction.options.getString('url', false);
     const dateString = interaction.options.getString('date', false);
     const unit = interaction.options.getString('unit', false);
+
+    const nameOrSuggestion = interaction.options.getString('name', true);
+    const name = await this._autocompleteService.resolveSuggestion(
+      nameOrSuggestion
+    );
 
     // TODO: Handle timezones (let each server set their default timezone)
     let dateTime = dateString ? Date.parse(dateString) : Date.now();
@@ -198,14 +202,9 @@ export default class LogCommand implements ICommand {
 
     const results = await this._autocompleteService.getSuggestions(
       focusedValue.value,
-      5
+      10
     );
 
-    await interaction.respond(
-      results.map(result => ({
-        name: result,
-        value: result,
-      }))
-    );
+    await interaction.respond(results);
   }
 }
