@@ -10,6 +10,7 @@ export interface IActivity {
   url?: string;
   date: Date;
   duration: number;
+  tags?: string[];
 }
 
 const schema = new Schema<IActivity>({
@@ -19,6 +20,7 @@ const schema = new Schema<IActivity>({
   url: {type: String},
   date: {type: Date, required: true},
   duration: {type: Number, required: true},
+  tags: {type: [String], default: []},
 });
 
 export const Activity = model<IActivity>('Activity', schema);
