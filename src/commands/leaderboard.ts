@@ -6,10 +6,17 @@ import {
   GuildMember,
 } from 'discord.js';
 import {Activity} from '../models/activity';
-import {injectable} from 'inversify';
+import {inject, injectable} from 'inversify';
+import {IConfig, IColorConfig} from '../config';
 
 @injectable()
 export default class LeaderboardCommand implements ICommand {
+  private readonly _colors: IColorConfig;
+
+  constructor(@inject('Config') private readonly config: IConfig) {
+    this._colors = config.colors;
+  }
+
   public readonly data = <SlashCommandBuilder>new SlashCommandBuilder()
     .setName('leaderboard')
     .setDescription('Show the leaderboard')
@@ -134,7 +141,7 @@ export default class LeaderboardCommand implements ICommand {
       }))
     );
     embed.setTimestamp(new Date());
-    embed.setColor('#c15bfc');
+    embed.setColor(this._colors.primary);
     await interaction.editReply({embeds: [embed]});
   }
 }

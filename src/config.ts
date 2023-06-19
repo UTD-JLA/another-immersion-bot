@@ -1,5 +1,14 @@
 import * as fs from 'fs';
 
+export interface IColorConfig {
+  primary: `#${string}`;
+  secondary: `#${string}`;
+  error: `#${string}`;
+  warning: `#${string}`;
+  info: `#${string}`;
+  success: `#${string}`;
+}
+
 export interface IConfig {
   logLevel: string;
   materialsPath: string;
@@ -7,6 +16,7 @@ export interface IConfig {
   mongoUrl: string;
   chartServiceUrl: string;
   localesPath: string;
+  colors: IColorConfig;
 }
 
 class ConfigError extends Error {
@@ -27,7 +37,8 @@ export class Config implements IConfig {
     public readonly materialsPath = __dirname + '/../data',
     public readonly mongoUrl = 'mongodb://localhost:27017',
     public readonly chartServiceUrl = 'http://127.0.0.1:5301/bar',
-    public readonly localesPath = __dirname + '/../locales'
+    public readonly localesPath = __dirname + '/../locales',
+    public readonly colors: IColorConfig
   ) {
     this.token = token;
     this.mongoUrl = mongoUrl;
@@ -81,7 +92,15 @@ export class Config implements IConfig {
       config.materialsPath,
       config.mongoUrl,
       config.chartServiceUrl,
-      config.localesPath
+      config.localesPath,
+      config.colors ?? {
+        primary: '#F3B6AF',
+        secondary: '#ECD1A0',
+        success: '#369e42',
+        error: '#e03838',
+        warning: '#edb63e',
+        info: '#578bf2',
+      }
     );
   }
 
@@ -90,6 +109,47 @@ export class Config implements IConfig {
 
     if (!config.token) errors.push(ConfigError.requiredError('token'));
 
+    if (config.colors) {
+      if (typeof config.colors !== 'object')
+        errors.push(new ConfigError('colors must be an object', 'colors'));
+
+      const requiredColors = [
+        'primary',
+        'secondary',
+        'success',
+        'error',
+        'warning',
+        'info',
+      ];
+
+      const missingColors = requiredColors.filter(
+        color => color in config.colors! === false
+      );
+
+      if (missingColors.length > 0)
+        errors.push(
+          new ConfigError(
+            `colors is missing the following colors: ${missingColors.join(
+              ', '
+            )}`,
+            'colors'
+          )
+        );
+
+      const invalidColors = Object.entries(config.colors!).filter(
+        ([, color]) => !/^#[0-9a-f]{6}$/i.test(color)
+      );
+
+      if (invalidColors.length > 0)
+        errors.push(
+          new ConfigError(
+            `colors contains invalid colors: ${invalidColors
+              .map(([color]) => color)
+              .join(', ')}`,
+            'colors'
+          )
+        );
+    }
     return errors;
   }
 }
