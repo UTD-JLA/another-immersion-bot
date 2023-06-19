@@ -6,13 +6,17 @@ import {
 } from 'discord.js';
 import {ICommand} from '.';
 import {Activity} from '../models/activity';
-import {IAutocompletionService, ILoggerService} from '../services';
+import {
+  IAutocompletionService,
+  ILoggerService,
+  ILocalizationService,
+} from '../services';
 import {inject, injectable} from 'inversify';
 import {spawn} from 'child_process';
 import {LimitedResourceLock} from '../util/limitedResource';
 import {cpus} from 'os';
 
-const JA = require('../locales/ja.json');
+//const JA = require('../locales/ja.json');
 
 interface YouTubeURLExtractedInfo {
   title: string;
@@ -28,6 +32,8 @@ interface YouTubeURLExtractedInfo {
 export default class LogCommand implements ICommand {
   private readonly _autocompleteService: IAutocompletionService;
   private readonly _loggerService: ILoggerService;
+  private readonly _localizationService: ILocalizationService;
+
   // TODO: make configurable
   private readonly _subprocessLock = new LimitedResourceLock(
     cpus().length * 10
@@ -36,148 +42,243 @@ export default class LogCommand implements ICommand {
   constructor(
     @inject('AutocompletionService')
     autocompleteService: IAutocompletionService,
-    @inject('LoggerService') loggerService: ILoggerService
+    @inject('LoggerService') loggerService: ILoggerService,
+    @inject('LocalizationService') localizationService: ILocalizationService
   ) {
     this._autocompleteService = autocompleteService;
     this._loggerService = loggerService;
+    this._localizationService = localizationService;
   }
 
   // TODO: anime, vn, etc. shortcuts
-  public readonly data = <SlashCommandBuilder>new SlashCommandBuilder()
-    .setName('log')
-    //.setNameLocalization('ja', JA.log.name)
-    .setDescription('Log an activity')
-    //.setDescriptionLocalization('ja', JA.log.description)
-    .addSubcommand(subcommand =>
-      subcommand
-        .setName('youtube')
-        .setDescription('Log a YouTube video')
-        .addStringOption(option =>
-          option
-            .setName('url')
-            //.setNameLocalization('ja', JA.log.options.url.name)
-            .setDescription('URL of the YouTube video')
-            //.setDescriptionLocalization('ja', JA.log.options.url.description)
-            .setRequired(true)
-        )
-        .addNumberOption(option =>
-          option
-            .setName('duration')
-            //.setNameLocalization('ja', JA.log.options.duration.name)
-            .setDescription('Duration of the activity in minutes')
-            // .setDescriptionLocalization(
-            //   'ja',
-            //   JA.log.options.duration.description
-            // )
-            .setRequired(false)
-        )
-    )
-    .addSubcommand(subcommand =>
-      subcommand
-        .setName('manual')
-        .setDescription('Log an activity manually')
-        .addStringOption(option =>
-          option
-            .setName('type')
-            .setNameLocalization('ja', JA.log.options.type.name)
-            .setDescription('Type of the activity')
-            .setDescriptionLocalization('ja', JA.log.options.type.description)
-            .setRequired(true)
-            .addChoices(
-              {
-                name: 'Listening',
-                value: 'listening',
-                name_localizations: {
-                  ja: JA.log.options.type.options.listening,
-                },
-              },
-              {
-                name: 'Reading',
-                value: 'reading',
-                name_localizations: {
-                  ja: JA.log.options.type.options.reading,
-                },
-              }
+  public get data() {
+    return <SlashCommandBuilder>new SlashCommandBuilder()
+      .setName('log')
+      .setNameLocalizations(
+        this._localizationService.getAllLocalizations('log.name')
+      )
+      .setDescription('Log an activity')
+      .setDescriptionLocalizations(
+        this._localizationService.getAllLocalizations('log.description')
+      )
+      .addSubcommand(subcommand =>
+        subcommand
+          .setName('youtube')
+          .setNameLocalizations(
+            this._localizationService.getAllLocalizations('log.youtube.name')
+          )
+          .setDescription('Log a YouTube video')
+          .setDescriptionLocalizations(
+            this._localizationService.getAllLocalizations(
+              'log.youtube.description'
             )
-        )
-        .addNumberOption(option =>
-          option
-            .setName('duration')
-            .setNameLocalization('ja', JA.log.options.duration.name)
-            .setDescription('Duration of the activity in minutes')
-            .setDescriptionLocalization(
-              'ja',
-              JA.log.options.duration.description
+          )
+          .addStringOption(option =>
+            option
+              .setName('url')
+              .setNameLocalizations(
+                this._localizationService.getAllLocalizations(
+                  'log.youtube.url.name'
+                )
+              )
+              .setDescription('URL of the YouTube video')
+              .setDescriptionLocalizations(
+                this._localizationService.getAllLocalizations(
+                  'log.youtube.url.description'
+                )
+              )
+              .setRequired(true)
+          )
+          .addNumberOption(option =>
+            option
+              .setName('duration')
+              .setNameLocalizations(
+                this._localizationService.getAllLocalizations(
+                  'log.youtube.duration.name'
+                )
+              )
+              .setDescription('Duration of the activity in minutes')
+              .setDescriptionLocalizations(
+                this._localizationService.getAllLocalizations(
+                  'log.youtube.duration.description'
+                )
+              )
+              .setRequired(false)
+          )
+      )
+      .addSubcommand(subcommand =>
+        subcommand
+          .setName('manual')
+          .setNameLocalizations(
+            this._localizationService.getAllLocalizations('log.manual.name')
+          )
+          .setDescription('Log an activity manually')
+          .setDescriptionLocalizations(
+            this._localizationService.getAllLocalizations(
+              'log.manual.description'
             )
-            .setRequired(true)
-        )
-        .addStringOption(option =>
-          option
-            .setName('name')
-            .setNameLocalization('ja', JA.log.options.name.name)
-            .setDescription('Name of the activity')
-            .setDescriptionLocalization('ja', JA.log.options.name.description)
-            .setAutocomplete(true)
-            .setRequired(true)
-        )
-        .addStringOption(option =>
-          option
-            .setName('url')
-            .setNameLocalization('ja', JA.log.options.url.name)
-            .setDescription('URL of the activity')
-            .setDescriptionLocalization('ja', JA.log.options.url.description)
-            .setRequired(false)
-        )
-        .addStringOption(option =>
-          option
-            .setName('date')
-            .setNameLocalization('ja', JA.log.options.date.name)
-            .setDescription(
-              'Date/time of the activity (ex. "2021-01-01", "13:00", "January 1 2021", "01 Jan 1970 00:00:00 GMT")'
-            )
-            .setDescriptionLocalization('ja', JA.log.options.date.description)
-            .setRequired(false)
-        )
-        .addStringOption(option =>
-          option
-            .setName('unit')
-            .setNameLocalization('ja', JA.log.options.unit.name)
-            .setDescription('Unit of the duration')
-            .addChoices(
-              {
-                name: 'Episodes',
-                value: 'episode',
-                name_localizations: {
-                  ja: JA.log.options.unit.options.episode,
+          )
+          .addStringOption(option =>
+            option
+              .setName('type')
+              .setNameLocalizations(
+                this._localizationService.getAllLocalizations(
+                  'log.manual.type.name'
+                )
+              )
+              .setDescription('Type of the activity')
+              .setDescriptionLocalizations(
+                this._localizationService.getAllLocalizations(
+                  'log.manual.type.description'
+                )
+              )
+              .setRequired(true)
+              .addChoices(
+                {
+                  name: 'Listening',
+                  value: 'listening',
+                  name_localizations:
+                    this._localizationService.getAllLocalizations(
+                      'log.manual.type.listening.name'
+                    ),
                 },
-              },
-              {
-                name: 'Characters',
-                value: 'character',
-                name_localizations: {
-                  ja: JA.log.options.unit.options.character,
+                {
+                  name: 'Reading',
+                  value: 'reading',
+                  name_localizations:
+                    this._localizationService.getAllLocalizations(
+                      'log.manual.type.reading.name'
+                    ),
+                }
+              )
+          )
+          .addNumberOption(option =>
+            option
+              .setName('duration')
+              .setNameLocalizations(
+                this._localizationService.getAllLocalizations(
+                  'log.manual.duration.name'
+                )
+              )
+              .setDescription('Duration of the activity in minutes')
+              .setDescriptionLocalizations(
+                this._localizationService.getAllLocalizations(
+                  'log.manual.duration.description'
+                )
+              )
+              .setRequired(true)
+          )
+          .addStringOption(option =>
+            option
+              .setName('name')
+              .setNameLocalizations(
+                this._localizationService.getAllLocalizations(
+                  'log.manual.name.name'
+                )
+              )
+              .setDescription('Name of the activity')
+              .setDescriptionLocalizations(
+                this._localizationService.getAllLocalizations(
+                  'log.manual.name.description'
+                )
+              )
+              .setAutocomplete(true)
+              .setRequired(true)
+          )
+          .addStringOption(option =>
+            option
+              .setName('url')
+              .setNameLocalizations(
+                this._localizationService.getAllLocalizations(
+                  'log.manual.url.name'
+                )
+              )
+              .setDescription('URL of the activity')
+              .setDescriptionLocalizations(
+                this._localizationService.getAllLocalizations(
+                  'log.manual.url.description'
+                )
+              )
+              .setRequired(false)
+          )
+          .addStringOption(option =>
+            option
+              .setName('date')
+              .setNameLocalizations(
+                this._localizationService.getAllLocalizations(
+                  'log.manual.date.name'
+                )
+              )
+              .setDescription(
+                'Date/time of the activity (ex. "2021-01-01", "13:00", "January 1 2021", "01 Jan 1970 00:00:00 GMT")'
+              )
+              .setDescriptionLocalizations(
+                this._localizationService.getAllLocalizations(
+                  'log.manual.date.description'
+                )
+              )
+              .setRequired(false)
+          )
+          .addStringOption(option =>
+            option
+              .setName('unit')
+              .setNameLocalizations(
+                this._localizationService.getAllLocalizations(
+                  'log.manual.unit.name'
+                )
+              )
+              .setDescription('Unit of the duration')
+              .setDescriptionLocalizations(
+                this._localizationService.getAllLocalizations(
+                  'log.manual.unit.description'
+                )
+              )
+              .addChoices(
+                {
+                  name: 'Episodes',
+                  value: 'episode',
+                  name_localizations:
+                    this._localizationService.getAllLocalizations(
+                      'log.manual.unit.episode.name'
+                    ),
                 },
-              },
-              {
-                name: 'Minute (default)',
-                value: 'minute',
-                name_localizations: {
-                  ja: JA.log.options.unit.options.minute,
+                {
+                  name: 'Characters',
+                  value: 'character',
+                  name_localizations:
+                    this._localizationService.getAllLocalizations(
+                      'log.manual.unit.character.name'
+                    ),
                 },
-              }
-            )
-            .setRequired(false)
-        )
-        .addStringOption(option =>
-          option
-            .setName('tags')
-            //.setNameLocalization('ja', JA.log.options.tags.name)
-            .setDescription('Tags for the activity')
-            //.setDescriptionLocalization('ja', JA.log.options.tags.description)
-            //.setAutocomplete(true)
-            .setRequired(false)
-        )
-    );
+                {
+                  name: 'Minute (default)',
+                  value: 'minute',
+                  name_localizations:
+                    this._localizationService.getAllLocalizations(
+                      'log.manual.unit.minute.name'
+                    ),
+                }
+              )
+              .setRequired(false)
+          )
+          .addStringOption(option =>
+            option
+              .setName('tags')
+              .setNameLocalizations(
+                this._localizationService.getAllLocalizations(
+                  'log.manual.tags.name'
+                )
+              )
+              .setDescription('Tags for the activity')
+              .setDescriptionLocalizations(
+                this._localizationService.getAllLocalizations(
+                  'log.manual.tags.description'
+                )
+              )
+              .setRequired(false)
+          )
+      );
+  }
 
   public static TIME_REGEX = /^(\d{1,2}):(\d{1,2})$/;
 

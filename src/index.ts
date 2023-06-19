@@ -19,6 +19,7 @@ const config = Config.fromJsonFile(
     chartServiceUrl: process.env['IB_CHART_SERVICE_URL'],
     materialsPath: process.env['IB_MATERIALS_PATH'],
     logLevel: process.env['IB_LOG_LEVEL'],
+    localesPath: process.env['IB_LOCALES_PATH'],
   }
 );
 

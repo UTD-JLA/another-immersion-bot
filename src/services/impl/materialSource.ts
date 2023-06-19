@@ -32,7 +32,7 @@ export default class MaterialSourceService implements IMaterialSourceService {
     @inject('LoggerService') logger: ILoggerService
   ) {
     this._materialDataPath = this.config.materialsPath;
-    this._logger = logger.child({target: 'MaterialSourceService'});
+    this._logger = logger;
   }
 
   public async checkForUpdates(): Promise<void> {

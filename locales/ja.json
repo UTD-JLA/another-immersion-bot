@@ -1,0 +1,35 @@
+{
+  "log": {
+    "name": "log",
+    "description": "あなたのアクティビティを記録",
+    "youtube": {
+      "name": "youtube",
+      "description": "視聴した動画を自動に記録",
+      "url.name": "url",
+      "url.description": "動画のURLを入力してください",
+      "duration.name": "時間",
+      "duration.description": "動画を視聴した時間を入力してください"
+    },
+    "manual": {
+      "name": "manual",
+      "description": "自分で記録",
+      "type.listening.name": "視聴",
+      "type.reading.name": "読書",
+      "duration.name": "時間",
+      "duration.description": "アクティビティの時間を入力してください",
+      "name.name": "タイトル",
+      "name.description": "アクティビティのタイトルを入力してください",
+      "url.name": "url",
+      "url.description": "アクティビティのURLを入力してください",
+      "date.name": "日付",
+      "date.description": "アクティビティの日付を入力してください",
+      "unit.name": "単位",
+      "unit.description": "アクティビティの時間単位を入力してください",
+      "unit.minute.name": "分",
+      "unit.episode.name": "話",
+      "unit.charactor.name": "字",
+      "tags.name": "タグ",
+      "tags.description": "アクティビティのタグを入力してください"
+    }
+  }
+}

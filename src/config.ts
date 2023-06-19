@@ -6,6 +6,7 @@ export interface IConfig {
   token: string;
   mongoUrl: string;
   chartServiceUrl: string;
+  localesPath: string;
 }
 
 class ConfigError extends Error {
@@ -25,7 +26,8 @@ export class Config implements IConfig {
     public readonly logLevel = 'info',
     public readonly materialsPath = __dirname + '/../data',
     public readonly mongoUrl = 'mongodb://localhost:27017',
-    public readonly chartServiceUrl = 'http://127.0.0.1:5301/bar'
+    public readonly chartServiceUrl = 'http://127.0.0.1:5301/bar',
+    public readonly localesPath = __dirname + '/../locales'
   ) {
     this.token = token;
     this.mongoUrl = mongoUrl;
@@ -78,7 +80,8 @@ export class Config implements IConfig {
       config.logLevel,
       config.materialsPath,
       config.mongoUrl,
-      config.chartServiceUrl
+      config.chartServiceUrl,
+      config.localesPath
     );
   }
 

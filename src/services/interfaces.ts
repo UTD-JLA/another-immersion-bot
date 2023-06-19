@@ -1,4 +1,6 @@
 import {Stream} from 'stream';
+import {Stringifiable} from '../util/types';
+import {Locale} from 'discord.js';
 
 export interface ISuggestion {
   name: string;
@@ -35,4 +37,14 @@ export interface ILoggerService {
   error(message: string, meta?: any): void;
   warn(message: string, meta?: any): void;
   child(meta: any): ILoggerService;
+}
+
+export interface ILocalizationService {
+  localize(key: string, ...args: Stringifiable[]): string | undefined;
+  mustLocalize(
+    key: string,
+    defaultValue: string,
+    ...args: Stringifiable[]
+  ): string;
+  getAllLocalizations(subkey: string): Record<Locale, string>;
 }
