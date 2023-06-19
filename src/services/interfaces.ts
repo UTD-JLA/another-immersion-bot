@@ -24,7 +24,8 @@ export interface IChartService {
     ylabel: string,
     xdata: number[],
     ydata: number[],
-    grid: boolean
+    grid: boolean,
+    color: string
   ): Promise<Stream>;
 }
 

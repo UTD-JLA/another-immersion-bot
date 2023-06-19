@@ -25,7 +25,8 @@ export default class ChartService implements IChartService {
     ylabel: string,
     xdata: number[],
     ydata: number[],
-    grid: boolean
+    grid: boolean,
+    color: string
   ): Promise<Stream> {
     const body = JSON.stringify({
       title,
@@ -34,6 +35,7 @@ export default class ChartService implements IChartService {
       xdata,
       ydata,
       grid,
+      color,
     });
 
     return new Promise<Stream>((resolve, reject) => {

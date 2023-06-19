@@ -1,16 +1,26 @@
 import {ICommand} from '.';
-import {SlashCommandBuilder, ChatInputCommandInteraction} from 'discord.js';
+import {
+  SlashCommandBuilder,
+  ChatInputCommandInteraction,
+  EmbedBuilder,
+} from 'discord.js';
 import {injectable, inject} from 'inversify';
 import {IChartService} from '../services';
 import {Activity} from '../models/activity';
 import {AttachmentBuilder} from 'discord.js';
+import {IConfig, IColorConfig} from '../config';
 
 @injectable()
 export default class ChartCommand implements ICommand {
   private readonly _chartService: IChartService;
+  private readonly _colors: IColorConfig;
 
-  constructor(@inject('ChartService') chartService: IChartService) {
+  constructor(
+    @inject('ChartService') chartService: IChartService,
+    @inject('Config') config: IConfig
+  ) {
     this._chartService = chartService;
+    this._colors = config.colors;
   }
 
   public readonly data = new SlashCommandBuilder()
@@ -50,10 +60,6 @@ export default class ChartCommand implements ICommand {
       },
     ]);
 
-    // Extract x and y data
-    // const xdata = activities.map(a => a._id);
-    // const ydata = activities.map(a => a.count);
-
     // Fill in missing days
     const today = new Date();
     const lastWeek = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -86,12 +92,44 @@ export default class ChartCommand implements ICommand {
       'Minutes',
       xdata,
       ydata,
-      false
+      false,
+      this._colors.secondary
     );
 
-    const attachment = new AttachmentBuilder(chart);
+    const totalTime = activities.reduce((a, b) => a + b.count, 0);
+    const averageTime = Math.round(totalTime / activities.length);
+    const peakTime = Math.max(...ydata);
+    const peakDay = xdata[ydata.indexOf(peakTime)];
+
+    const roundedPeakTime = Math.round(peakTime);
+    const roundedAverageTime = Math.round(averageTime);
+    const roundedTotalTime = Math.round(totalTime);
+
+    const attachment = new AttachmentBuilder(chart).setName('chart.png');
+    const embed = new EmbedBuilder()
+      .setTitle('Weekly Logged Time')
+      .setDescription(
+        'Below is a chart of your logged time for the last week along with some statistics!'
+      )
+      .setFields(
+        {
+          name: 'Total Time',
+          value: `${roundedTotalTime} minutes`,
+        },
+        {
+          name: 'Average Time',
+          value: `${roundedAverageTime} minutes`,
+        },
+        {
+          name: 'Peak Time',
+          value: `${roundedPeakTime} minutes on ${peakDay}`,
+        }
+      )
+      .setImage('attachment://chart.png')
+      .setColor(this._colors.primary);
 
     await interaction.editReply({
+      embeds: [embed],
       files: [attachment],
     });
   }

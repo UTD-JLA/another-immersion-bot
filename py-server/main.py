@@ -3,6 +3,16 @@ import io
 import json
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
+plt.rcParams['axes.facecolor'] = '#313338'
+plt.rcParams['figure.facecolor'] = '#2B2D31'
+plt.rcParams['text.color'] = '#E0E0E0'
+plt.rcParams['axes.labelcolor'] = '#E0E0E0'
+plt.rcParams['axes.edgecolor'] = '#E0E0E0'
+plt.rcParams['xtick.color'] = '#E0E0E0'
+plt.rcParams['ytick.color'] = '#E0E0E0'
+plt.rcParams['grid.color'] = '#4F4F4F'
+plt.rcParams['grid.linestyle'] = '--'
+
 class SimpleChartServer(BaseHTTPRequestHandler):
     def do_POST(self):        
         # check path
@@ -50,4 +60,9 @@ class SimpleChartServer(BaseHTTPRequestHandler):
 
 if __name__ == '__main__':
     server = HTTPServer(('', 5301), SimpleChartServer)
-    server.serve_forever()
+    try:
+      server.serve_forever()
+    except KeyboardInterrupt:
+      pass
+    finally:
+      server.server_close()
