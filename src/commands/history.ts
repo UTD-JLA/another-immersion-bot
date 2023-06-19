@@ -149,10 +149,10 @@ export default class HistoryCommand implements ICommand {
         activities
           .map(
             activity =>
-              `${activity.date.toISOString().slice(0, 10)} - ${
-                activity.name
-              } (${activity.type}) for ${activity.duration} minutes` +
-              (showIds ? ` <${activity._id}>` : '')
+              `**${activity.date.toISOString().slice(0, 10)}** (${
+                activity.formattedDuration ?? activity.duration
+              }): ${activity.type} - ${activity.name}` +
+              (showIds ? `\n<${activity._id}>` : '')
           )
           .join('\n')
       )
@@ -174,9 +174,9 @@ export default class HistoryCommand implements ICommand {
     const embed = new EmbedBuilder().setTitle('History').setFields(
       activities.map(activity => ({
         name: `${activity.date.toLocaleDateString()} ${activity.date.toLocaleTimeString()}`,
-        value: `${activity.name}\n(${activity.duration} minutes) ${
-          showIds ? `<${activity._id}>` : ''
-        }`,
+        value: `${activity.name}\n(${
+          activity.roundedDuration ?? activity.duration
+        } minutes) ${showIds ? `<${activity._id}>` : ''}`,
         inline: true,
       }))
     );

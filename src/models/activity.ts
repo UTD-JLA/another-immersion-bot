@@ -11,6 +11,10 @@ export interface IActivity {
   date: Date;
   duration: number;
   tags?: string[];
+
+  // Virtuals
+  roundedDuration?: number;
+  formattedDuration?: string;
 }
 
 const schema = new Schema<IActivity>({
@@ -21,6 +25,21 @@ const schema = new Schema<IActivity>({
   date: {type: Date, required: true},
   duration: {type: Number, required: true},
   tags: {type: [String], default: []},
+});
+
+schema.virtual('roundedDuration').get(function (this: IActivity) {
+  return Math.round(this.duration);
+});
+
+schema.virtual('formattedDuration').get(function (this: IActivity) {
+  const hours = Math.floor(this.duration / 60);
+  const minutes = Math.round(this.duration % 60);
+
+  if (hours === 0) {
+    return `${minutes}m`;
+  }
+
+  return `${hours}h ${minutes}m`;
 });
 
 export const Activity = model<IActivity>('Activity', schema);
