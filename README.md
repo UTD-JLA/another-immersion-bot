@@ -18,9 +18,9 @@ Name |  Description | Default | Required
 mongoUrl | The URI used to connect to the database | mongodb://localhost:27017 | Yes
 token | Discord bot token | N/A | Yes
 chartServiceUrl | URL of http server that generated chart PNG files | http://127.0.0.1:5301/bar | Works but returns error response when /chart is used
-materialsPath | Path to folder containing autocomplete titles | Provided data folder  | No
+materialsPath | Path to folder containing autocomplete titles | [Provided data folder](/data)  | No
 logLevel | Level to set the logging service | info | No
-localesPath | Path to folder containing locales files | Provided locales folder | No
+localesPath | Path to folder containing locales files | [Provided locales folder](/locales) | No
 colors | JSON object with primary, secondary, warning, error, info, and success colors (hex strings). Cannot be set with env variables, must be set in config file if you wish to override the default colors | ![Default colors](docs/default-colors.png) | No
 
 #### materialsPath
