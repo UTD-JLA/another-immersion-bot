@@ -40,8 +40,18 @@
       "episodes.description": "視聴した話数を入力してください",
       "anime-name.name": "タイトル",
       "anime-name.description": "アニメのタイトルを入力してください",
-      "episode-length": "一話の長さ(分)",
-      "episode-length.description": "一話の長さを入力してください"
+      "episode-length.name": "一話の長さ",
+      "episode-length.description": "一話の長さ(分)を入力してください"
+    },
+    "vn": {
+      "name": "ノベル",
+      "description": "ノベルの読書した時間をもっと簡単に記録",
+      "characters.name": "字数",
+      "characters.description": "読書した字数を入力してください",
+      "vn-name.name": "タイトル",
+      "vn-name.description": "ノベルのタイトルを入力してください",
+      "reading-speed.name": "読書速度",
+      "reading-speed.description": "読書速度(字/分)を入力してください"
     }
   }
 }

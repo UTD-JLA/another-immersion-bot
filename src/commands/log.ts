@@ -177,6 +177,66 @@ export default class LogCommand implements ICommand {
       )
       .addSubcommand(subcommand =>
         subcommand
+          .setName('vn')
+          .setNameLocalizations(
+            this._localizationService.getAllLocalizations('log.vn.name')
+          )
+          .setDescription('Log a visual novel')
+          .setDescriptionLocalizations(
+            this._localizationService.getAllLocalizations('log.vn.description')
+          )
+          .addNumberOption(option =>
+            option
+              .setName('characters')
+              .setNameLocalizations(
+                this._localizationService.getAllLocalizations(
+                  'log.vn.characters.name'
+                )
+              )
+              .setDescription('How many characters')
+              .setDescriptionLocalizations(
+                this._localizationService.getAllLocalizations(
+                  'log.vn.characters.description'
+                )
+              )
+              .setRequired(true)
+          )
+          .addStringOption(option =>
+            option
+              .setName('vn-name')
+              .setNameLocalizations(
+                this._localizationService.getAllLocalizations(
+                  'log.vn.vn-name.name'
+                )
+              )
+              .setDescription('Name of the visual novel')
+              .setDescriptionLocalizations(
+                this._localizationService.getAllLocalizations(
+                  'log.vn.vn-name.description'
+                )
+              )
+              .setRequired(true)
+              .setAutocomplete(true)
+          )
+          .addNumberOption(option =>
+            option
+              .setName('reading-speed')
+              .setNameLocalizations(
+                this._localizationService.getAllLocalizations(
+                  'log.vn.reading-speed.name'
+                )
+              )
+              .setDescription('Reading speed in characters per minute')
+              .setDescriptionLocalizations(
+                this._localizationService.getAllLocalizations(
+                  'log.vn.reading-speed.description'
+                )
+              )
+              .setRequired(false)
+          )
+      )
+      .addSubcommand(subcommand =>
+        subcommand
           .setName('manual')
           .setNameLocalizations(
             this._localizationService.getAllLocalizations('log.manual.name')
@@ -551,7 +611,7 @@ export default class LogCommand implements ICommand {
     });
   }
 
-  public async _executeAnime(
+  private async _executeAnime(
     interaction: ChatInputCommandInteraction
   ): Promise<void> {
     await interaction.deferReply();
@@ -574,7 +634,7 @@ export default class LogCommand implements ICommand {
       tags,
       userId: interaction.user.id,
       date: new Date(),
-      type: 'watching',
+      type: 'listening',
     });
 
     const embed = new EmbedBuilder()
@@ -606,11 +666,72 @@ export default class LogCommand implements ICommand {
     });
   }
 
+  private async _executeVN(
+    interaction: ChatInputCommandInteraction
+  ): Promise<void> {
+    await interaction.deferReply();
+
+    const nameOrSuggestion = interaction.options.getString('vn-name', true);
+    const name = await this._autocompleteService.resolveSuggestion(
+      nameOrSuggestion
+    );
+
+    const charCount = interaction.options.getNumber('characters', true);
+    const charPerMinute =
+      interaction.options.getNumber('characters-per-minute', false) ?? 350;
+
+    const duration = charCount / charPerMinute;
+    const tags = ['vn'];
+
+    const activity = await Activity.create({
+      name,
+      duration,
+      tags,
+      userId: interaction.user.id,
+      date: new Date(),
+      type: 'reading',
+    });
+
+    const embed = new EmbedBuilder()
+      .setTitle('Activity logged!')
+      .setFields(
+        {
+          name: 'VN',
+          value: name,
+        },
+        {
+          name: 'Characters',
+          value: charCount.toString(),
+        },
+        {
+          name: 'Characters Per Minute',
+          value: charPerMinute.toString(),
+        },
+        {
+          name: 'Total Read Time',
+          value: `${Math.floor(duration / 60)}h ${duration % 60}m`,
+        }
+      )
+      .setFooter({text: `ID: ${activity.id}`})
+      .setTimestamp(activity.date)
+      .setColor(this._colors.success);
+
+    await interaction.editReply({
+      embeds: [embed],
+    });
+  }
+
   public async execute(interaction: ChatInputCommandInteraction) {
     if (interaction.options.getSubcommand() === 'youtube') {
       return this._executeYoutube(interaction);
     } else if (interaction.options.getSubcommand() === 'anime') {
       return this._executeAnime(interaction);
+    } else if (interaction.options.getSubcommand() === 'vn') {
+      return this._executeVN(interaction);
+    }
+
+    if (interaction.options.getSubcommand() !== 'manual') {
+      throw new Error('Subcommand not implemented');
     }
 
     // manual entry
