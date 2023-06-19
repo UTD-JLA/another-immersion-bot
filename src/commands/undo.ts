@@ -9,10 +9,17 @@ import {
   EmbedBuilder,
 } from 'discord.js';
 import {Document} from 'mongoose';
-import {injectable} from 'inversify';
+import {injectable, inject} from 'inversify';
+import {IConfig, IColorConfig} from '../config';
 
 @injectable()
 export default class UndoCommand implements ICommand {
+  private readonly _colors: IColorConfig;
+
+  constructor(@inject('Config') private readonly config: IConfig) {
+    this._colors = config.colors;
+  }
+
   public readonly data = <SlashCommandBuilder>new SlashCommandBuilder()
     .setName('undo')
     .setDescription('Undo the last activity')
@@ -69,7 +76,8 @@ export default class UndoCommand implements ICommand {
       .setTitle('Undo')
       .setDescription(
         `Are you sure you want to undo the activity "${activity.name}"?`
-      );
+      )
+      .setColor(this._colors.warning);
 
     const response = await interaction.reply({
       embeds: [embed],
@@ -85,18 +93,29 @@ export default class UndoCommand implements ICommand {
       if (confirmation.customId === 'undo') {
         await activity.deleteOne();
         await interaction.editReply({
-          embeds: [embed.setDescription('Activity undone')],
+          embeds: [
+            embed
+              .setDescription('Activity undone')
+              .setColor(this._colors.success),
+          ],
           components: [],
         });
       } else if (confirmation.customId === 'cancel') {
         await interaction.editReply({
-          embeds: [embed.setDescription('Undo cancelled')],
+          embeds: [
+            embed.setDescription('Undo cancelled').setColor(this._colors.error),
+          ],
           components: [],
         });
       }
     } catch (error) {
       await interaction.editReply({
-        embeds: [embed.setDescription('Undo cancelled')],
+        embeds: [
+          embed
+            .setDescription('Undo cancelled')
+            .setColor(this._colors.error)
+            .setFooter({text: 'No response received'}),
+        ],
         components: [],
       });
       return;

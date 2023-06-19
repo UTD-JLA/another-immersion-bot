@@ -1,4 +1,5 @@
 import {ICommand} from '.';
+import {IColorConfig, IConfig} from '../config';
 import {Activity, IActivity} from '../models/activity';
 import {
   SlashCommandBuilder,
@@ -8,10 +9,16 @@ import {
   EmbedBuilder,
   ButtonStyle,
 } from 'discord.js';
-import {injectable} from 'inversify';
+import {inject, injectable} from 'inversify';
 
 @injectable()
 export default class HistoryCommand implements ICommand {
+  private readonly _colors: IColorConfig;
+
+  constructor(@inject('Config') private readonly config: IConfig) {
+    this._colors = config.colors;
+  }
+
   public readonly data = <SlashCommandBuilder>new SlashCommandBuilder()
     .setName('history')
     .setDescription('Show your activity history')
@@ -67,11 +74,10 @@ export default class HistoryCommand implements ICommand {
     let page = 0;
     const pageSize = simple ? 10 : 6;
     const nPages = Math.ceil(activities.length / pageSize);
-    const createEmbed = simple
-      ? HistoryCommand._createSimpleEmbed
-      : HistoryCommand._createEmbed;
+    const createEmbed = simple ? this._createSimpleEmbed : this._createEmbed;
 
-    let embed = createEmbed(
+    let embed = createEmbed.call(
+      this,
       activities.slice(0, pageSize),
       showIds,
       page,
@@ -113,7 +119,8 @@ export default class HistoryCommand implements ICommand {
       const startIndex = page * pageSize;
       const endIndex = Math.min(startIndex + pageSize, activities.length);
 
-      embed = createEmbed(
+      embed = createEmbed.call(
+        this,
         activities.slice(startIndex, endIndex),
         showIds,
         page,
@@ -130,7 +137,7 @@ export default class HistoryCommand implements ICommand {
     });
   }
 
-  private static _createSimpleEmbed(
+  private _createSimpleEmbed(
     activities: IActivity[],
     showIds: boolean,
     page: number,
@@ -151,10 +158,14 @@ export default class HistoryCommand implements ICommand {
       )
       .setFooter({text: `Page ${page + 1} of ${nPages}`});
 
+    embed.setColor(
+      page % 2 === 0 ? this._colors.primary : this._colors.secondary
+    );
+
     return embed;
   }
 
-  private static _createEmbed(
+  private _createEmbed(
     activities: IActivity[],
     showIds: boolean,
     page: number,
@@ -173,6 +184,10 @@ export default class HistoryCommand implements ICommand {
     if (nPages > 1) {
       embed.setFooter({text: `Page ${page + 1} of ${nPages}`});
     }
+
+    embed.setColor(
+      page % 2 === 0 ? this._colors.primary : this._colors.secondary
+    );
 
     return embed;
   }

@@ -15,6 +15,7 @@ import {inject, injectable} from 'inversify';
 import {spawn} from 'child_process';
 import {LimitedResourceLock} from '../util/limitedResource';
 import {cpus} from 'os';
+import {IColorConfig, IConfig} from '../config';
 
 //const JA = require('../locales/ja.json');
 
@@ -33,6 +34,7 @@ export default class LogCommand implements ICommand {
   private readonly _autocompleteService: IAutocompletionService;
   private readonly _loggerService: ILoggerService;
   private readonly _localizationService: ILocalizationService;
+  private readonly _colors: IColorConfig;
 
   // TODO: make configurable
   private readonly _subprocessLock = new LimitedResourceLock(
@@ -43,11 +45,13 @@ export default class LogCommand implements ICommand {
     @inject('AutocompletionService')
     autocompleteService: IAutocompletionService,
     @inject('LoggerService') loggerService: ILoggerService,
-    @inject('LocalizationService') localizationService: ILocalizationService
+    @inject('LocalizationService') localizationService: ILocalizationService,
+    @inject('Config') config: IConfig
   ) {
     this._autocompleteService = autocompleteService;
     this._loggerService = loggerService;
     this._localizationService = localizationService;
+    this._colors = config.colors;
   }
 
   // TODO: anime, vn, etc. shortcuts
@@ -474,7 +478,8 @@ export default class LogCommand implements ICommand {
       )
       .setFooter({text: `ID: ${activity.id}`})
       .setImage(ytInfo.thumbnail)
-      .setTimestamp(activity.date);
+      .setTimestamp(activity.date)
+      .setColor(this._colors.success);
 
     await interaction.editReply({
       embeds: [embed],
@@ -567,7 +572,8 @@ export default class LogCommand implements ICommand {
     const embed = new EmbedBuilder()
       .setTitle('Activity logged!')
       .setFooter({text: `ID: ${activity.id}`})
-      .setTimestamp(activity.date);
+      .setTimestamp(activity.date)
+      .setColor(this._colors.success);
 
     await interaction.editReply({
       embeds: [embed],
