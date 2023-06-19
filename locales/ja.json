@@ -11,8 +11,10 @@
       "duration.description": "動画を視聴した時間を入力してください"
     },
     "manual": {
-      "name": "manual",
+      "name": "手動",
       "description": "自分で記録",
+      "type.name": "タイプ",
+      "type.description": "アクティビティのタイプを選択してください",
       "type.listening.name": "視聴",
       "type.reading.name": "読書",
       "duration.name": "時間",
