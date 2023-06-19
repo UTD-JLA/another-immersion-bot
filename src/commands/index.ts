@@ -21,6 +21,7 @@ import HistoryCommand from './history';
 import UndoCommand from './undo';
 import ChartCommand from './chart';
 import ExportCommand from './export';
+import ConfigCommand from './config';
 
 export default <CommandConstructor[]>[
   LogCommand,
@@ -29,4 +30,5 @@ export default <CommandConstructor[]>[
   UndoCommand,
   ChartCommand,
   ExportCommand,
+  ConfigCommand,
 ];

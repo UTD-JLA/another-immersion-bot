@@ -10,14 +10,14 @@ import {
   IAutocompletionService,
   ILoggerService,
   ILocalizationService,
+  IGuildConfigService,
 } from '../services';
 import {inject, injectable} from 'inversify';
 import {spawn} from 'child_process';
 import {LimitedResourceLock} from '../util/limitedResource';
 import {cpus} from 'os';
 import {IColorConfig, IConfig} from '../config';
-
-//const JA = require('../locales/ja.json');
+import {parseDate} from 'chrono-node';
 
 interface YouTubeURLExtractedInfo {
   title: string;
@@ -35,6 +35,7 @@ export default class LogCommand implements ICommand {
   private readonly _loggerService: ILoggerService;
   private readonly _localizationService: ILocalizationService;
   private readonly _colors: IColorConfig;
+  private readonly _guildConfigService: IGuildConfigService;
 
   // TODO: make configurable
   private readonly _subprocessLock = new LimitedResourceLock(
@@ -46,12 +47,14 @@ export default class LogCommand implements ICommand {
     autocompleteService: IAutocompletionService,
     @inject('LoggerService') loggerService: ILoggerService,
     @inject('LocalizationService') localizationService: ILocalizationService,
+    @inject('GuildConfigService') guildConfigService: IGuildConfigService,
     @inject('Config') config: IConfig
   ) {
     this._autocompleteService = autocompleteService;
     this._loggerService = loggerService;
     this._localizationService = localizationService;
     this._colors = config.colors;
+    this._guildConfigService = guildConfigService;
   }
 
   // TODO: anime, vn, etc. shortcuts
@@ -515,39 +518,28 @@ export default class LogCommand implements ICommand {
       tags.push(...(await this._getDomainTags(urlComponents)));
     }
 
-    // TODO: Handle timezones (let each server set their default timezone)
-    let dateTime = dateString ? Date.parse(dateString) : Date.now();
+    // Parse the user input if it exists, otherwise use the current time
+    let date = new Date();
+    let timezone = 'UTC';
 
-    if (dateString && isNaN(dateTime)) {
-      if (!LogCommand.TIME_REGEX.test(dateString)) {
-        await interaction.reply({
+    if (dateString) {
+      const guildConfig = interaction.guildId
+        ? await this._guildConfigService.getGuildConfig(interaction.guildId)
+        : null;
+
+      timezone = guildConfig?.timezone ?? 'UTC';
+
+      const parsedDate = parseDate(dateString, {timezone});
+      if (parsedDate === null) {
+        await interaction.editReply({
           content: 'Invalid date',
-          ephemeral: true,
         });
         return;
       }
-
-      const match = LogCommand.TIME_REGEX.exec(dateString);
-      const hours = parseInt(match![1]);
-      const minutes = parseInt(match![2]);
-
-      if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
-        await interaction.reply({
-          content: 'Invalid time',
-          ephemeral: true,
-        });
-        return;
-      }
-
-      const now = new Date();
-      now.setHours(hours);
-      now.setMinutes(minutes);
-      now.setSeconds(0);
-      dateTime = now.getTime();
+      date = parsedDate;
     }
 
-    const date = new Date(dateTime);
-
+    // Convert durartions to minutes as needed
     let convertedDuration = duration;
 
     if (unit === 'episode') {
@@ -574,6 +566,16 @@ export default class LogCommand implements ICommand {
       .setFooter({text: `ID: ${activity.id}`})
       .setTimestamp(activity.date)
       .setColor(this._colors.success);
+
+    if (dateString) {
+      embed.setDescription(
+        `Note: date was parsed as __${date.toISOString()}__\n` +
+          ' **You should see the correct localized time at the bottom of this message.**\n' +
+          ` The default timezone for this server is ${timezone}.` +
+          ' Use /undo to remove this activity if it is incorrect and try again.\n' +
+          ' For example: use "yesterday 8pm jst" instead of "yesterday 8pm".'
+      );
+    }
 
     await interaction.editReply({
       embeds: [embed],

@@ -1,6 +1,7 @@
 import {Stream} from 'stream';
 import {Stringifiable} from '../util/types';
 import {Locale} from 'discord.js';
+import {IGuildConfig} from '../models/guildConfig';
 
 export interface ISuggestion {
   name: string;
@@ -48,4 +49,12 @@ export interface ILocalizationService {
     ...args: Stringifiable[]
   ): string;
   getAllLocalizations(subkey: string): Record<Locale, string>;
+}
+
+export interface IGuildConfigService {
+  getGuildConfig(guildId: string): Promise<IGuildConfig>;
+  updateGuildConfig(
+    guildId: string,
+    config: Partial<IGuildConfig>
+  ): Promise<void>;
 }

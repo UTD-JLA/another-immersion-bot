@@ -5,12 +5,14 @@ import {
   ILoggerService,
   IChartService,
   ILocalizationService,
+  IGuildConfigService,
 } from '../services/interfaces';
 import AutocompletionService from '../services/impl/autocomplete';
 import MaterialSourceService from '../services/impl/materialSource';
 import LoggerService from '../services/impl/logger';
 import ChartService from '../services/impl/chart';
 import LocalizationService from '../services/impl/localization';
+import GuildConfigService from '../services/impl/guildConfig';
 
 export function registerServices(container: Container) {
   container
@@ -38,6 +40,10 @@ export function registerServices(container: Container) {
   container
     .bind<ILocalizationService>('LocalizationService')
     .to(LocalizationService);
+
+  container
+    .bind<IGuildConfigService>('GuildConfigService')
+    .to(GuildConfigService);
 }
 
 export {
@@ -46,4 +52,5 @@ export {
   ILoggerService,
   IChartService,
   ILocalizationService,
+  IGuildConfigService,
 };
