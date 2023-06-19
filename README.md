@@ -20,6 +20,8 @@ token | Discord bot token | N/A | Yes
 chartServiceUrl | URL of http server that generated chart PNG files | http://127.0.0.1:5301/bar | Works but returns error response when /chart is used
 materialsPath | Path to folder containing autocomplete titles | Provided data folder  | No
 logLevel | Level to set the logging service | info | No
+localesPath | Path to folder containing locales files | Provided locales folder | No
+colors | JSON object with primary, secondary, warning, error, info, and success colors (hex strings). Cannot be set with env variables, must be set in config file if you wish to override the default colors | { primary: '#F3B6AF', secondary: '#ECD1A0', success: '#369e42', error: '#e03838', warning: '#edb63e', info: '#578bf2' } | No
 
 #### materialsPath
 Files in this directory should be in the format LANG.TYPE.optional-stuff and should be a list of autocomplete entries seperated by a new-line character.
