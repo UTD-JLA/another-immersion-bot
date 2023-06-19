@@ -12,6 +12,7 @@ RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - &&\
 
 # Copy app
 COPY ./data /app/data
+COPY ./locales /app/locales
 COPY ./src /app/src
 COPY ./package.json /app/package.json
 COPY ./package-lock.json /app/package-lock.json
