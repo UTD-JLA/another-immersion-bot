@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "chrono-node": "^2.6.3",
+    "csv-string": "^4.1.1",
     "discord.js": "^14.11.0",
     "inversify": "^6.0.1",
     "mongoose": "^7.3.0",
