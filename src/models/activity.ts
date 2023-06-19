@@ -27,11 +27,20 @@ const schema = new Schema<IActivity>({
   tags: {type: [String], default: []},
 });
 
-schema.virtual('roundedDuration').get(function (this: IActivity) {
+schema.pre('save', function (this, next) {
+  if (this.isModified('tags') && this.tags) {
+    this.tags = this.tags.map(tag => tag.toLowerCase().trim());
+    this.tags = [...new Set(this.tags)];
+  }
+
+  next();
+});
+
+schema.virtual('roundedDuration').get(function (this) {
   return Math.round(this.duration);
 });
 
-schema.virtual('formattedDuration').get(function (this: IActivity) {
+schema.virtual('formattedDuration').get(function (this) {
   const hours = Math.floor(this.duration / 60);
   const minutes = Math.round(this.duration % 60);
 
