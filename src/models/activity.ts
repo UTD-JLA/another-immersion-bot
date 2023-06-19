@@ -1,6 +1,9 @@
 import {Schema, model, ObjectId} from 'mongoose';
 
-type ActivityType = 'listening' | 'reading';
+export enum ActivityType {
+  Listening = 'listening',
+  Reading = 'reading',
+}
 
 export interface IActivity {
   _id?: ObjectId;
@@ -20,7 +23,7 @@ export interface IActivity {
 const schema = new Schema<IActivity>({
   userId: {type: String, required: true},
   name: {type: String, required: true},
-  type: {type: String, required: true},
+  type: {type: String, required: true, enum: Object.values(ActivityType)},
   url: {type: String},
   date: {type: Date, required: true},
   duration: {type: Number, required: true},
