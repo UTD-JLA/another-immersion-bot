@@ -115,6 +115,68 @@ export default class LogCommand implements ICommand {
       )
       .addSubcommand(subcommand =>
         subcommand
+          .setName('anime')
+          .setNameLocalizations(
+            this._localizationService.getAllLocalizations('log.anime.name')
+          )
+          .setDescription('Log an anime episode')
+          .setDescriptionLocalizations(
+            this._localizationService.getAllLocalizations(
+              'log.anime.description'
+            )
+          )
+          .addNumberOption(option =>
+            option
+              .setName('episodes')
+              .setNameLocalizations(
+                this._localizationService.getAllLocalizations(
+                  'log.anime.episodes.name'
+                )
+              )
+              .setDescription('How many episodes')
+              .setDescriptionLocalizations(
+                this._localizationService.getAllLocalizations(
+                  'log.anime.episodes.description'
+                )
+              )
+              .setRequired(true)
+          )
+          .addStringOption(option =>
+            option
+              .setName('anime-name')
+              .setNameLocalizations(
+                this._localizationService.getAllLocalizations(
+                  'log.anime.anime-name.name'
+                )
+              )
+              .setDescription('Name of the anime')
+              .setDescriptionLocalizations(
+                this._localizationService.getAllLocalizations(
+                  'log.anime.anime-name.description'
+                )
+              )
+              .setRequired(true)
+              .setAutocomplete(true)
+          )
+          .addNumberOption(option =>
+            option
+              .setName('episode-length')
+              .setNameLocalizations(
+                this._localizationService.getAllLocalizations(
+                  'log.anime.episode-length.name'
+                )
+              )
+              .setDescription('Length of each episode in minutes')
+              .setDescriptionLocalizations(
+                this._localizationService.getAllLocalizations(
+                  'log.anime.episode-length.description'
+                )
+              )
+              .setRequired(false)
+          )
+      )
+      .addSubcommand(subcommand =>
+        subcommand
           .setName('manual')
           .setNameLocalizations(
             this._localizationService.getAllLocalizations('log.manual.name')
@@ -489,9 +551,66 @@ export default class LogCommand implements ICommand {
     });
   }
 
+  public async _executeAnime(
+    interaction: ChatInputCommandInteraction
+  ): Promise<void> {
+    await interaction.deferReply();
+
+    const nameOrSuggestion = interaction.options.getString('anime-name', true);
+    const name = await this._autocompleteService.resolveSuggestion(
+      nameOrSuggestion
+    );
+
+    const episode = interaction.options.getNumber('episodes', true);
+    const episodeLength =
+      interaction.options.getNumber('episode-length', false) ?? 24;
+
+    const duration = episode * episodeLength;
+    const tags = ['anime'];
+
+    const activity = await Activity.create({
+      name,
+      duration,
+      tags,
+      userId: interaction.user.id,
+      date: new Date(),
+      type: 'watching',
+    });
+
+    const embed = new EmbedBuilder()
+      .setTitle('Activity logged!')
+      .setFields(
+        {
+          name: 'Anime',
+          value: name,
+        },
+        {
+          name: 'Episodes',
+          value: episode.toString(),
+        },
+        {
+          name: 'Episode Length',
+          value: `${episodeLength} minutes`,
+        },
+        {
+          name: 'Total Watch Time',
+          value: `${Math.floor(duration / 60)}h ${duration % 60}m`,
+        }
+      )
+      .setFooter({text: `ID: ${activity.id}`})
+      .setTimestamp(activity.date)
+      .setColor(this._colors.success);
+
+    await interaction.editReply({
+      embeds: [embed],
+    });
+  }
+
   public async execute(interaction: ChatInputCommandInteraction) {
     if (interaction.options.getSubcommand() === 'youtube') {
       return this._executeYoutube(interaction);
+    } else if (interaction.options.getSubcommand() === 'anime') {
+      return this._executeAnime(interaction);
     }
 
     // manual entry
@@ -584,10 +703,16 @@ export default class LogCommand implements ICommand {
 
   public async autocomplete(interaction: AutocompleteInteraction) {
     const focusedValue = interaction.options.getFocused(true);
+    let scope;
+
+    if (focusedValue.name.indexOf('-') !== -1) {
+      scope = focusedValue.name.split('-')[0];
+    }
 
     const results = await this._autocompleteService.getSuggestions(
       focusedValue.value,
-      10
+      10,
+      scope
     );
 
     await interaction.respond(results);

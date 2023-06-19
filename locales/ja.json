@@ -30,6 +30,16 @@
       "unit.charactor.name": "字",
       "tags.name": "タグ",
       "tags.description": "アクティビティのタグを入力してください"
+    },
+    "anime": {
+      "name": "アニメ",
+      "description": "アニメの視聴した時間をもっと簡単に記録",
+      "episodes.name": "話数",
+      "episodes.description": "視聴した話数を入力してください",
+      "anime-name.name": "タイトル",
+      "anime-name.description": "アニメのタイトルを入力してください",
+      "episode-length": "一話の長さ(分)",
+      "episode-length.description": "一話の長さを入力してください"
     }
   }
 }
