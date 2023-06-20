@@ -1,6 +1,9 @@
+from matplotlib.dates import AutoDateFormatter, AutoDateLocator, date2num
 import matplotlib.pyplot as plt
 import io
 import json
+import pandas as pd
+import datetime
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import signal
 
@@ -17,7 +20,7 @@ plt.rcParams['grid.linestyle'] = '--'
 class SimpleChartServer(BaseHTTPRequestHandler):
     def do_POST(self):        
         # check path
-        if self.path != '/bar':
+        if self.path not in ['/bar', '/easyDateBar']:
             self.send_error(404)
             return  
 
@@ -25,39 +28,77 @@ class SimpleChartServer(BaseHTTPRequestHandler):
             content_len = int(self.headers.get('Content-Length', 0))
             post_body = self.rfile.read(content_len)
             data = json.loads(post_body.decode('utf-8'))
-
-            if type(data) is not dict:
-                raise Exception('Invalid data type')
-
-            title = data.get('title', '')
-            xlabel = data.get('xlabel', '')
-            ylabel = data.get('ylabel', '')
-            grid = data.get('grid', True)
-            color = data.get('color', 'm')
-            
-            x = data['xdata']
-            y = data['ydata']
-
-            if type(x) is not list or type(y) is not list:
-                raise Exception('Invalid data type')
         except:
             self.send_error(400)
             return
 
-        plt.figure(figsize=(8, 4.5))
-        plt.title(title)
-        plt.bar(x, y, color=color)
-        plt.xlabel(xlabel)
-        plt.ylabel(ylabel)
-        plt.grid(grid)
+        if self.path == '/bar':
+          if type(data) is not dict:
+              self.send_error(400)
+              return
 
-        buf = io.BytesIO()
-        plt.savefig(buf, format='png')
+          title = data.get('title', '')
+          xlabel = data.get('xlabel', '')
+          ylabel = data.get('ylabel', '')
+          grid = data.get('grid', True)
+          color = data.get('color', 'm')
+          
+          x = data['xdata']
+          y = data['ydata']
 
-        self.send_response(200)
-        self.send_header('Content-type', 'image/png')
-        self.end_headers()
-        self.wfile.write(buf.getvalue())
+          if type(x) is not list or type(y) is not list:
+              self.send_error(400)
+              return
+
+          plt.figure(figsize=(8, 4.5))
+          plt.title(title)
+          plt.bar(x, y, color=color)
+          plt.xlabel(xlabel)
+          plt.ylabel(ylabel)
+          plt.grid(grid)
+
+          buf = io.BytesIO()
+          plt.savefig(buf, format='png')
+
+          self.send_response(200)
+          self.send_header('Content-type', 'image/png')
+          self.end_headers()
+          self.wfile.write(buf.getvalue())
+        else:
+          if type(data) is not dict:
+              self.send_error(400)
+              return
+            
+          chart_data = list(data.get('data', []))
+          buckets = data.get('buckets', 7)
+          color = data.get('color', 'm')
+
+          xtick_locator = AutoDateLocator()
+          xtick_formatter = AutoDateFormatter(xtick_locator)
+
+          ax = plt.axes()
+          ax.xaxis.set_major_locator(xtick_locator)
+          ax.xaxis.set_major_formatter(xtick_formatter)
+          ax.xaxis.set_tick_params(rotation=-20)
+
+          x = list(map(lambda d: datetime.datetime.fromisoformat(d['x']), chart_data))
+          y = list(map(lambda d: d['y'], chart_data))
+
+          df = pd.DataFrame({'x': x, 'y': y})
+          r = pd.date_range(start=df['x'].min(), end=df['x'].max())
+          df = df.set_index('x').reindex(r).fillna(0.0).rename_axis('x').reset_index()
+
+          ax.hist(date2num(df['x']), buckets, weights=df['y'], color=color, rwidth=0.7)
+
+          buf = io.BytesIO()
+          ax.figure.savefig(buf, format='png')
+          ax.figure.clear()
+
+          self.send_response(200)
+          self.send_header('Content-type', 'image/png')
+          self.end_headers()
+          self.wfile.write(buf.getvalue())
+  
 
 if __name__ == '__main__':
     server = HTTPServer(('', 5301), SimpleChartServer)

@@ -70,4 +70,51 @@ export default class ChartService implements IChartService {
       req.end();
     });
   }
+
+  public getDateBarChartPng(
+    data: {
+      x: string;
+      y: number;
+    }[],
+    color: string,
+    buckets: number
+  ): Promise<Stream> {
+    const body = JSON.stringify({
+      data,
+      color,
+      buckets,
+    });
+
+    return new Promise<Stream>((resolve, reject) => {
+      const req = request(
+        {
+          hostname: this._url.hostname,
+          port: this._url.port,
+          path: '/easyDateBar',
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': body.length,
+          },
+        },
+        res => {
+          if (res.headers['content-type'] !== 'image/png') {
+            reject(
+              new Error(`Chart service returned ${res.headers['content-type']}`)
+            );
+          }
+
+          if (res.statusCode !== 200) {
+            reject(new Error(`Chart service returned ${res.statusCode}`));
+          }
+
+          resolve(res);
+        }
+      );
+
+      req.on('error', reject);
+      req.write(body);
+      req.end();
+    });
+  }
 }

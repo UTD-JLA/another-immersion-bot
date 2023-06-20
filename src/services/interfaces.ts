@@ -28,6 +28,15 @@ export interface IChartService {
     grid: boolean,
     color: string
   ): Promise<Stream>;
+
+  getDateBarChartPng(
+    data: {
+      x: string;
+      y: number;
+    }[],
+    color: string,
+    buckets: number
+  ): Promise<Stream>;
 }
 
 export interface IMaterialSourceService {
