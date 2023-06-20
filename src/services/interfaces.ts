@@ -58,3 +58,10 @@ export interface IGuildConfigService {
     config: Partial<IGuildConfig>
   ): Promise<void>;
 }
+
+export interface IUserConfigService {
+  getTimezone(userId: string): Promise<string | undefined>;
+  setTimezone(userId: string, timezone: string): Promise<void>;
+  getReadingSpeed(userId: string): Promise<number | undefined>;
+  setReadingSpeed(userId: string, readingSpeed: number): Promise<void>;
+}

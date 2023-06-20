@@ -1,4 +1,5 @@
 import {Schema, model, ObjectId} from 'mongoose';
+import {validateTimezone} from '../util/validation';
 
 export interface IGuildConfig {
   _id?: ObjectId;
@@ -16,14 +17,5 @@ const schema = new Schema<IGuildConfig>({
     },
   },
 });
-
-function validateTimezone(timeZone: string) {
-  try {
-    Intl.DateTimeFormat(undefined, {timeZone});
-    return true;
-  } catch (e) {
-    return false;
-  }
-}
 
 export const GuildConfig = model<IGuildConfig>('GuildConfig', schema);

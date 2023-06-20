@@ -6,6 +6,7 @@ import {
   IChartService,
   ILocalizationService,
   IGuildConfigService,
+  IUserConfigService,
 } from '../services/interfaces';
 import AutocompletionService from '../services/impl/autocomplete';
 import MaterialSourceService from '../services/impl/materialSource';
@@ -13,6 +14,7 @@ import LoggerService from '../services/impl/logger';
 import ChartService from '../services/impl/chart';
 import LocalizationService from '../services/impl/localization';
 import GuildConfigService from '../services/impl/guildConfig';
+import UserConfigService from '../services/impl/userConfig';
 
 export function registerServices(container: Container) {
   container
@@ -44,6 +46,8 @@ export function registerServices(container: Container) {
   container
     .bind<IGuildConfigService>('GuildConfigService')
     .to(GuildConfigService);
+
+  container.bind<IUserConfigService>('UserConfigService').to(UserConfigService);
 }
 
 export {
@@ -53,4 +57,5 @@ export {
   IChartService,
   ILocalizationService,
   IGuildConfigService,
+  IUserConfigService,
 };

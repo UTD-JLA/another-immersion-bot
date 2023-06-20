@@ -11,6 +11,7 @@ import {
   ILoggerService,
   ILocalizationService,
   IGuildConfigService,
+  IUserConfigService,
 } from '../services';
 import {inject, injectable} from 'inversify';
 import {spawn} from 'child_process';
@@ -36,6 +37,7 @@ export default class LogCommand implements ICommand {
   private readonly _localizationService: ILocalizationService;
   private readonly _colors: IColorConfig;
   private readonly _guildConfigService: IGuildConfigService;
+  private readonly _userConfigService: IUserConfigService;
 
   // TODO: make configurable
   private readonly _subprocessLock = new LimitedResourceLock(
@@ -48,6 +50,7 @@ export default class LogCommand implements ICommand {
     @inject('LoggerService') loggerService: ILoggerService,
     @inject('LocalizationService') localizationService: ILocalizationService,
     @inject('GuildConfigService') guildConfigService: IGuildConfigService,
+    @inject('UserConfigService') userConfigService: IUserConfigService,
     @inject('Config') config: IConfig
   ) {
     this._autocompleteService = autocompleteService;
@@ -55,6 +58,7 @@ export default class LogCommand implements ICommand {
     this._localizationService = localizationService;
     this._colors = config.colors;
     this._guildConfigService = guildConfigService;
+    this._userConfigService = userConfigService;
   }
 
   // TODO: anime, vn, etc. shortcuts
@@ -683,8 +687,12 @@ export default class LogCommand implements ICommand {
     );
 
     const charCount = interaction.options.getNumber('characters', true);
+    const userReadingSpeed =
+      (await this._userConfigService.getReadingSpeed(interaction.user.id)) ??
+      350;
     const charPerMinute =
-      interaction.options.getNumber('characters-per-minute', false) ?? 350;
+      interaction.options.getNumber('characters-per-minute', false) ??
+      userReadingSpeed;
 
     const duration = charCount / charPerMinute;
     const tags = ['vn'];
@@ -766,14 +774,29 @@ export default class LogCommand implements ICommand {
 
     // Parse the user input if it exists, otherwise use the current time
     let date = new Date();
-    let timezone = 'UTC';
+    let timezone = 'not set (using server timezone)';
+    let timeIsFrom = 'server';
 
     if (dateString) {
-      const guildConfig = interaction.guildId
-        ? await this._guildConfigService.getGuildConfig(interaction.guildId)
-        : null;
+      const userTimezonePromise = this._userConfigService.getTimezone(
+        interaction.user.id
+      );
 
-      timezone = guildConfig?.timezone ?? 'UTC';
+      // const guildConfig = interaction.guildId
+      //   ? await this._guildConfigService.getGuildConfig(interaction.guildId)
+      //   : null;
+
+      const guildConfigPromise = interaction.guildId
+        ? this._guildConfigService.getGuildConfig(interaction.guildId)
+        : Promise.resolve(null);
+
+      const [userTimezone, guildConfig] = await Promise.all([
+        userTimezonePromise,
+        guildConfigPromise,
+      ]);
+
+      timezone = userTimezone ?? guildConfig?.timezone ?? 'UTC';
+      timeIsFrom = userTimezone ? 'user' : 'guild';
 
       const parsedDate = parseDate(dateString, {timezone});
       if (parsedDate === null) {
@@ -817,9 +840,10 @@ export default class LogCommand implements ICommand {
       embed.setDescription(
         `Note: date was parsed as __${date.toISOString()}__\n` +
           ' **You should see the correct localized time at the bottom of this message.**\n' +
-          ` The default timezone for this server is ${timezone}.` +
+          ` The default timezone for this **${timeIsFrom}** is **${timezone}**.` +
           ' Use /undo to remove this activity if it is incorrect and try again.\n' +
-          ' For example: use "yesterday 8pm jst" instead of "yesterday 8pm".'
+          ' For example: use "yesterday 8pm jst" instead of "yesterday 8pm".' +
+          ' Also consider setting your timezone or changing the guild timezone if you are an admin.'
       );
     }
 
