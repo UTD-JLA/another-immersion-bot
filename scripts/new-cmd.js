@@ -8,6 +8,7 @@ const commandDir = './src/commands';
 const name = process.argv[2];
 const capitalizedName = name.charAt(0).toUpperCase() + name.slice(1);
 const fileName = `${commandDir}/${name}.ts`;
+const dashCaseName = name.replace(/([A-Z])/g, g => `-${g[0].toLowerCase()}`);
 
 const fileContent = `import {ICommand} from '.';
 import {
@@ -20,7 +21,7 @@ import {injectable} from 'inversify';
 @injectable()
 export default class ${capitalizedName}Command implements ICommand {
   public readonly data = new SlashCommandBuilder()
-    .setName('${name}')
+    .setName('${dashCaseName}')
     .setDescription('${capitalizedName} command');
 
   public async execute(interaction: ChatInputCommandInteraction) {
