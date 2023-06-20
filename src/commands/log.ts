@@ -782,10 +782,6 @@ export default class LogCommand implements ICommand {
         interaction.user.id
       );
 
-      // const guildConfig = interaction.guildId
-      //   ? await this._guildConfigService.getGuildConfig(interaction.guildId)
-      //   : null;
-
       const guildConfigPromise = interaction.guildId
         ? this._guildConfigService.getGuildConfig(interaction.guildId)
         : Promise.resolve(null);
