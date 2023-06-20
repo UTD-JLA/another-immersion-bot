@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import io
 import json
 from http.server import BaseHTTPRequestHandler, HTTPServer
+import signal
 
 plt.rcParams['axes.facecolor'] = '#313338'
 plt.rcParams['figure.facecolor'] = '#2B2D31'
@@ -61,6 +62,7 @@ class SimpleChartServer(BaseHTTPRequestHandler):
 if __name__ == '__main__':
     server = HTTPServer(('', 5301), SimpleChartServer)
     try:
+      signal.signal(signal.SIGTERM, server.server_close)
       server.serve_forever()
     except KeyboardInterrupt:
       pass
