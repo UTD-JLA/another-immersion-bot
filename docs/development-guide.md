@@ -27,8 +27,8 @@ This stuff isn't used much or is meant more for beginners.
 2. [Matplotlib User Guide](https://matplotlib.org/stable/users/index.html)
 
 ## Creating Commands
-All command files can be found in [src/commands](src/commands/).
-All commands should be use the @injectable decorator and be re-exported in [the index.ts file](src/commands/index.ts).
+All command files can be found in [src/commands](../src/commands/).
+All commands should be use the @injectable decorator and be re-exported in [the index.ts file](../src/commands/index.ts).
 Use `npm run new-cmd commandName` to quickly create a new file. Commands should implement `ICommand` as follows:
 ```ts
 export interface ICommand {
@@ -48,7 +48,7 @@ Creating and using a service takes 4 steps:
 4. Inject the serivce
 
 #### 1. Creating an interface
-All of the interfaces can be found in [src/services/interfaces.ts](src/services/interfaces.ts). Let's create an example CatImageService that gets pictures of cats
+All of the interfaces can be found in [src/services/interfaces.ts](../src/services/interfaces.ts). Let's create an example CatImageService that gets pictures of cats
 
 First in the interfaces file:
 ```ts
@@ -75,7 +75,7 @@ export default class CatImageService implements ICatImageService {
 ```
 
 #### 3. Register and export
-Then in [src/services/index.ts](src/services/index.ts) import both your interface and the implementation. Bind your implementation
+Then in [src/services/index.ts](../src/services/index.ts) import both your interface and the implementation. Bind your implementation
 in the `registerServices` function body as such:
 
 ```ts
