@@ -1,5 +1,6 @@
 # Setup
-#### [(or skip to Docker)](#docker)
+#### [Skip to Docker](#docker)
+#### [Also see dev guide](/docs/development-guide.md)
 ## Requirements
 1. Node.js (>=16.9.0) and NPM 
 2. MongoDB server
