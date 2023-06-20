@@ -110,6 +110,7 @@ export default class LogCommand implements ICommand {
                   'log.youtube.duration.description'
                 )
               )
+              .setMinValue(0)
               .setRequired(false)
           )
       )
@@ -139,6 +140,7 @@ export default class LogCommand implements ICommand {
                   'log.anime.episodes.description'
                 )
               )
+              .setMinValue(1)
               .setRequired(true)
           )
           .addStringOption(option =>
@@ -172,6 +174,7 @@ export default class LogCommand implements ICommand {
                   'log.anime.episode-length.description'
                 )
               )
+              .setMinValue(0)
               .setRequired(false)
           )
       )
@@ -199,6 +202,7 @@ export default class LogCommand implements ICommand {
                   'log.vn.characters.description'
                 )
               )
+              .setMinValue(0)
               .setRequired(true)
           )
           .addStringOption(option =>
@@ -232,6 +236,7 @@ export default class LogCommand implements ICommand {
                   'log.vn.reading-speed.description'
                 )
               )
+              .setMinValue(0)
               .setRequired(false)
           )
       )
@@ -295,6 +300,7 @@ export default class LogCommand implements ICommand {
                   'log.manual.duration.description'
                 )
               )
+              .setMinValue(0)
               .setRequired(true)
           )
           .addStringOption(option =>

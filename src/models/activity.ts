@@ -26,7 +26,7 @@ const schema = new Schema<IActivity>({
   type: {type: String, required: true, enum: Object.values(ActivityType)},
   url: {type: String},
   date: {type: Date, required: true},
-  duration: {type: Number, required: true},
+  duration: {type: Number, required: true, min: 0},
   tags: {type: [String], default: []},
 });
 
