@@ -604,11 +604,14 @@ export default class LogCommand implements ICommand {
     try {
       // TODO: also make this configurable
       // NOTE: Discord API gives us 15 minutes to edit the reply
-      await this._subprocessLock.acquire(1);
+      // This is in milliseconds
+      await this._subprocessLock.acquire(1 * 60 * 1000);
     } catch (error) {
       await interaction.editReply({
         content: "I'm busy right now, please try again later",
       });
+      // Timout does not release it automatically
+      this._subprocessLock.release();
       // IMPORTANT: do not continue unless we have the lock
       return;
     }
