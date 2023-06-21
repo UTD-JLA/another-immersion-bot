@@ -423,17 +423,10 @@ export default class LogCommand implements ICommand {
       );
   }
 
-  public static TIME_REGEX = /^(\d{1,2}):(\d{1,2})$/;
-
-  // For the manual extractor. Hardcoding some mapping between domain names and site names.
-  public static KNOWN_DOMAIN_TAGS = new Map<string, string>([
+  private static KNOWN_DOMAIN_TAGS = new Map<string, string>([
     ['youtube.com', 'youtube'],
     ['youtu.be', 'youtube'],
   ]);
-
-  public static get DOMAIN_TAG_VALUES(): Set<string> {
-    return new Set(LogCommand.KNOWN_DOMAIN_TAGS.values());
-  }
 
   private async _getDomainTags(url: URL): Promise<string[]> {
     const hostname = url.hostname;
