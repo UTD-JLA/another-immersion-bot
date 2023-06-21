@@ -24,8 +24,8 @@ interface VideoURLExtractedInfo {
   title: string;
   id: string;
   extractor: string;
-  channelId: string;
-  channelName: string;
+  uploaderId: string;
+  uploaderName: string;
   duration: number;
   seekTime?: number;
   thumbnail: string;
@@ -456,7 +456,7 @@ export default class LogCommand implements ICommand {
   private async _getVideoTags(url: URL): Promise<string[]> {
     try {
       const info = await this._extractVideoInfo(url);
-      return [info.channelName, info.channelId];
+      return [info.uploaderName, info.uploaderId];
     } catch (error) {
       return [];
     }
@@ -478,7 +478,7 @@ export default class LogCommand implements ICommand {
           '--no-call-home',
           '--skip-download',
           '--print',
-          '{"id":%(id)j,"extractor":%(extractor)j,"title":%(title)j,"channel_id":%(channel_id)j,"channel":%(channel)j,"duration":%(duration)j,"thumbnail":%(thumbnail)j, "description":%(description)j}',
+          '{"id":%(id)j,"extractor":%(extractor)j,"title":%(title)j,"uploader_id":%(uploader_id)j,"uploader":%(uploader)j,"duration":%(duration)j,"thumbnail":%(thumbnail)j, "description":%(description)j}',
           url.toString(),
         ],
         {shell: false}
@@ -509,8 +509,8 @@ export default class LogCommand implements ICommand {
           info.title = ytdlInfo.title;
           info.id = ytdlInfo.id;
           info.extractor = ytdlInfo.extractor;
-          info.channelId = ytdlInfo.channel_id;
-          info.channelName = ytdlInfo.channel;
+          info.uploaderId = ytdlInfo.uploader_id;
+          info.uploaderName = ytdlInfo.uploader;
           info.duration = ytdlInfo.duration;
           info.thumbnail = ytdlInfo.thumbnail;
           info.description = ytdlInfo.description;
@@ -520,7 +520,7 @@ export default class LogCommand implements ICommand {
               ...error,
               stdout: Buffer.concat(stdout).toString(),
               stderr: Buffer.concat(stderr).toString(),
-              videoId: id,
+              URL: url,
             });
           }
 
@@ -584,7 +584,7 @@ export default class LogCommand implements ICommand {
       name: vidInfo.title,
       url: urlComponents.toString(),
       duration,
-      tags: ['video', vidInfo.extractor, vidInfo.channelName, vidInfo.channelId],
+      tags: ['video', vidInfo.extractor, vidInfo.uploaderName, vidInfo.uploaderId],
       userId: interaction.user.id,
       date: new Date(),
       type: 'listening',
@@ -595,7 +595,7 @@ export default class LogCommand implements ICommand {
       .setFields(
         {
           name: 'Channel',
-          value: vidInfo.channelName,
+          value: vidInfo.uploaderName,
         },
         {
           name: 'Video',
