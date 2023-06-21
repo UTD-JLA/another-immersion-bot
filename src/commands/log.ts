@@ -18,7 +18,7 @@ import {spawn} from 'child_process';
 import {LimitedResourceLock} from '../util/limitedResource';
 import {cpus} from 'os';
 import {IColorConfig, IConfig} from '../config';
-import {parseDate} from 'chrono-node';
+import {getUserTimezone, parseTimeWithUserTimezone} from '../util/time';
 
 interface VideoURLExtractedInfo {
   title: string;
@@ -121,6 +121,22 @@ export default class LogCommand implements ICommand {
               .setMinValue(0)
               .setRequired(false)
           )
+          .addStringOption(option =>
+            option
+              .setName('date')
+              .setNameLocalizations(
+                this._localizationService.getAllLocalizations(
+                  'log.video.date.name'
+                )
+              )
+              .setDescription('Date and or time of the activity')
+              .setDescriptionLocalizations(
+                this._localizationService.getAllLocalizations(
+                  'log.video.date.description'
+                )
+              )
+              .setRequired(false)
+          )
       )
       .addSubcommand(subcommand =>
         subcommand
@@ -185,6 +201,22 @@ export default class LogCommand implements ICommand {
               .setMinValue(0)
               .setRequired(false)
           )
+          .addStringOption(option =>
+            option
+              .setName('date')
+              .setNameLocalizations(
+                this._localizationService.getAllLocalizations(
+                  'log.anime.date.name'
+                )
+              )
+              .setDescription('Date and or time of the activity')
+              .setDescriptionLocalizations(
+                this._localizationService.getAllLocalizations(
+                  'log.anime.date.description'
+                )
+              )
+              .setRequired(false)
+          )
       )
       .addSubcommand(subcommand =>
         subcommand
@@ -245,6 +277,22 @@ export default class LogCommand implements ICommand {
                 )
               )
               .setMinValue(0)
+              .setRequired(false)
+          )
+          .addStringOption(option =>
+            option
+              .setName('date')
+              .setNameLocalizations(
+                this._localizationService.getAllLocalizations(
+                  'log.vn.date.name'
+                )
+              )
+              .setDescription('Date/time of the activity')
+              .setDescriptionLocalizations(
+                this._localizationService.getAllLocalizations(
+                  'log.vn.date.description'
+                )
+              )
               .setRequired(false)
           )
       )
@@ -535,6 +583,24 @@ export default class LogCommand implements ICommand {
     const url = interaction.options.getString('url', true);
     const urlComponents = new URL(url);
 
+    const enteredDate = interaction.options.getString('date', false);
+    const date = enteredDate
+      ? await parseTimeWithUserTimezone(
+          this._userConfigService,
+          this._guildConfigService,
+          enteredDate,
+          interaction.user.id,
+          interaction.guildId
+        )
+      : new Date();
+
+    if (!date) {
+      await interaction.editReply({
+        content: 'Invalid date',
+      });
+      return;
+    }
+
     try {
       // TODO: also make this configurable
       // NOTE: Discord API gives us 15 minutes to edit the reply
@@ -586,7 +652,7 @@ export default class LogCommand implements ICommand {
         vidInfo.uploaderId,
       ],
       userId: interaction.user.id,
-      date: new Date(),
+      date,
       type: 'listening',
     });
 
@@ -634,6 +700,25 @@ export default class LogCommand implements ICommand {
     const episodeLength =
       interaction.options.getNumber('episode-length', false) ?? 24;
 
+    const enteredDate = interaction.options.getString('date', false);
+
+    const date = enteredDate
+      ? await parseTimeWithUserTimezone(
+          this._userConfigService,
+          this._guildConfigService,
+          enteredDate,
+          interaction.user.id,
+          interaction.guildId
+        )
+      : new Date();
+
+    if (!date) {
+      await interaction.editReply({
+        content: 'Invalid date',
+      });
+      return;
+    }
+
     const duration = episode * episodeLength;
     const tags = ['anime'];
 
@@ -642,7 +727,7 @@ export default class LogCommand implements ICommand {
       duration,
       tags,
       userId: interaction.user.id,
-      date: new Date(),
+      date,
       type: 'listening',
     });
 
@@ -694,6 +779,25 @@ export default class LogCommand implements ICommand {
       userReadingSpeed;
 
     const duration = charCount / charPerMinute;
+
+    const enteredDate = interaction.options.getString('date', false);
+    const date = enteredDate
+      ? await parseTimeWithUserTimezone(
+          this._userConfigService,
+          this._guildConfigService,
+          enteredDate,
+          interaction.user.id,
+          interaction.guildId
+        )
+      : new Date();
+
+    if (!date) {
+      await interaction.editReply({
+        content: 'Invalid date',
+      });
+      return;
+    }
+
     const tags = ['vn'];
 
     const activity = await Activity.create({
@@ -701,7 +805,7 @@ export default class LogCommand implements ICommand {
       duration,
       tags,
       userId: interaction.user.id,
-      date: new Date(),
+      date,
       type: 'reading',
     });
 
@@ -771,37 +875,32 @@ export default class LogCommand implements ICommand {
       tags.push(...(await this._getDomainTags(urlComponents)));
     }
 
-    // Parse the user input if it exists, otherwise use the current time
-    let date = new Date();
-    let timezone = 'not set (using server timezone)';
-    let timeIsFrom = 'server';
+    const date = dateString
+      ? await parseTimeWithUserTimezone(
+          this._userConfigService,
+          this._guildConfigService,
+          dateString,
+          interaction.user.id,
+          interaction.guildId
+        )
+      : new Date();
 
-    if (dateString) {
-      const userTimezonePromise = this._userConfigService.getTimezone(
-        interaction.user.id
-      );
-
-      const guildConfigPromise = interaction.guildId
-        ? this._guildConfigService.getGuildConfig(interaction.guildId)
-        : Promise.resolve(null);
-
-      const [userTimezone, guildConfig] = await Promise.all([
-        userTimezonePromise,
-        guildConfigPromise,
-      ]);
-
-      timezone = userTimezone ?? guildConfig?.timezone ?? 'UTC';
-      timeIsFrom = userTimezone ? 'user' : 'guild';
-
-      const parsedDate = parseDate(dateString, {timezone});
-      if (parsedDate === null) {
-        await interaction.editReply({
-          content: 'Invalid date',
-        });
-        return;
-      }
-      date = parsedDate;
+    if (!date) {
+      await interaction.editReply({
+        content: 'Invalid date',
+      });
+      return;
     }
+
+    const timezone = dateString
+      ? await getUserTimezone(
+          this._userConfigService,
+          this._guildConfigService,
+          dateString,
+          interaction.user.id,
+          interaction.guildId ?? undefined
+        )
+      : null;
 
     // Convert durartions to minutes as needed
     let convertedDuration = duration;
@@ -831,11 +930,11 @@ export default class LogCommand implements ICommand {
       .setTimestamp(activity.date)
       .setColor(this._colors.success);
 
-    if (dateString) {
+    if (timezone) {
       embed.setDescription(
         `Note: date was parsed as __${date.toISOString()}__\n` +
           ' **You should see the correct localized time at the bottom of this message.**\n' +
-          ` The default timezone for this **${timeIsFrom}** is **${timezone}**.` +
+          ` The timezone used was **${timezone}**. Check your user configuration to change this.\n` +
           ' Use /undo to remove this activity if it is incorrect and try again.\n' +
           ' For example: use "yesterday 8pm jst" instead of "yesterday 8pm".' +
           ' Also consider setting your timezone or changing the guild timezone if you are an admin.'

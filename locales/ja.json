@@ -8,7 +8,9 @@
       "url.name": "url",
       "url.description": "動画のURLを入力してください",
       "duration.name": "時間",
-      "duration.description": "動画を視聴した時間を入力してください"
+      "duration.description": "動画を視聴した時間を入力してください",
+      "date.name": "日付",
+      "date.description": "動画を視聴した日付を入力してください"
     },
     "manual": {
       "name": "手動",
@@ -41,7 +43,9 @@
       "anime-name.name": "タイトル",
       "anime-name.description": "アニメのタイトルを入力してください",
       "episode-length.name": "一話の長さ",
-      "episode-length.description": "一話の長さ(分)を入力してください"
+      "episode-length.description": "一話の長さ(分)を入力してください",
+      "date.name": "日付",
+      "date.description": "アニメを視聴した日付を入力してください"
     },
     "vn": {
       "name": "ノベル",
@@ -51,7 +55,9 @@
       "vn-name.name": "タイトル",
       "vn-name.description": "ノベルのタイトルを入力してください",
       "reading-speed.name": "読書速度",
-      "reading-speed.description": "読書速度(字/分)を入力してください"
+      "reading-speed.description": "読書速度(字/分)を入力してください",
+      "date.name": "日付",
+      "date.description": "ノベルを読書した日付を入力してください"
     }
   }
 }
