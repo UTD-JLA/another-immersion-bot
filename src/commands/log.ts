@@ -80,7 +80,9 @@ export default class LogCommand implements ICommand {
           .setNameLocalizations(
             this._localizationService.getAllLocalizations('log.video.name')
           )
-          .setDescription('Log a video from a yt-dlp supported site, like YouTube or NicoNico')
+          .setDescription(
+            'Log a video from a yt-dlp supported site, like YouTube or NicoNico'
+          )
           .setDescriptionLocalizations(
             this._localizationService.getAllLocalizations(
               'log.video.description'
@@ -584,7 +586,12 @@ export default class LogCommand implements ICommand {
       name: vidInfo.title,
       url: urlComponents.toString(),
       duration,
-      tags: ['video', vidInfo.extractor, vidInfo.uploaderName, vidInfo.uploaderId],
+      tags: [
+        'video',
+        vidInfo.extractor,
+        vidInfo.uploaderName,
+        vidInfo.uploaderId,
+      ],
       userId: interaction.user.id,
       date: new Date(),
       type: 'listening',
