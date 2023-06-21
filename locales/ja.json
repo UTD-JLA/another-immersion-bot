@@ -2,8 +2,8 @@
   "log": {
     "name": "log",
     "description": "あなたのアクティビティを記録",
-    "youtube": {
-      "name": "youtube",
+    "video": {
+      "name": "動画",
       "description": "視聴した動画を自動に記録",
       "url.name": "url",
       "url.description": "動画のURLを入力してください",

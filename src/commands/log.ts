@@ -20,8 +20,10 @@ import {cpus} from 'os';
 import {IColorConfig, IConfig} from '../config';
 import {parseDate} from 'chrono-node';
 
-interface YouTubeURLExtractedInfo {
+interface VideoURLExtractedInfo {
   title: string;
+  id: string;
+  extractor: string;
   channelId: string;
   channelName: string;
   duration: number;
@@ -74,14 +76,14 @@ export default class LogCommand implements ICommand {
       )
       .addSubcommand(subcommand =>
         subcommand
-          .setName('youtube')
+          .setName('video')
           .setNameLocalizations(
-            this._localizationService.getAllLocalizations('log.youtube.name')
+            this._localizationService.getAllLocalizations('log.video.name')
           )
-          .setDescription('Log a YouTube video')
+          .setDescription('Log a video from a yt-dlp supported site, like YouTube or NicoNico')
           .setDescriptionLocalizations(
             this._localizationService.getAllLocalizations(
-              'log.youtube.description'
+              'log.video.description'
             )
           )
           .addStringOption(option =>
@@ -89,13 +91,13 @@ export default class LogCommand implements ICommand {
               .setName('url')
               .setNameLocalizations(
                 this._localizationService.getAllLocalizations(
-                  'log.youtube.url.name'
+                  'log.video.url.name'
                 )
               )
-              .setDescription('URL of the YouTube video')
+              .setDescription('URL of the video')
               .setDescriptionLocalizations(
                 this._localizationService.getAllLocalizations(
-                  'log.youtube.url.description'
+                  'log.video.url.description'
                 )
               )
               .setRequired(true)
@@ -105,13 +107,13 @@ export default class LogCommand implements ICommand {
               .setName('duration')
               .setNameLocalizations(
                 this._localizationService.getAllLocalizations(
-                  'log.youtube.duration.name'
+                  'log.video.duration.name'
                 )
               )
               .setDescription('Duration of the activity in minutes')
               .setDescriptionLocalizations(
                 this._localizationService.getAllLocalizations(
-                  'log.youtube.duration.description'
+                  'log.video.duration.description'
                 )
               )
               .setMinValue(0)
@@ -421,6 +423,7 @@ export default class LogCommand implements ICommand {
 
   public static TIME_REGEX = /^(\d{1,2}):(\d{1,2})$/;
 
+  // For the manual extractor. Hardcoding some mapping between domain names and site names.
   public static KNOWN_DOMAIN_TAGS = new Map<string, string>([
     ['youtube.com', 'youtube'],
     ['youtu.be', 'youtube'],
@@ -442,32 +445,25 @@ export default class LogCommand implements ICommand {
     const domainTag =
       LogCommand.KNOWN_DOMAIN_TAGS.get(domainName) ?? domainName;
 
+    // TODO: Maybe try to attempt yt-dlp extraction on all urls
     if (domainTag === 'youtube') {
-      return [...(await this._getYoutubeTags(url)), domainTag];
+      return [...(await this._getVideoTags(url)), domainTag];
     }
 
     return [domainTag];
   }
 
-  private async _getYoutubeTags(url: URL): Promise<string[]> {
+  private async _getVideoTags(url: URL): Promise<string[]> {
     try {
-      const info = await this._extractYouTubeInfo(url);
+      const info = await this._extractVideoInfo(url);
       return [info.channelName, info.channelId];
     } catch (error) {
       return [];
     }
   }
 
-  private _extractYouTubeInfo(url: URL): Promise<YouTubeURLExtractedInfo> {
-    const id =
-      url.hostname === 'youtu.be'
-        ? url.pathname.slice(1)
-        : url.searchParams.get('v');
-
-    if (!id) {
-      throw new Error('Invalid YouTube URL');
-    }
-
+  private _extractVideoInfo(url: URL): Promise<VideoURLExtractedInfo> {
+    // Calculate starting at a particular time if the user provides a timed url (assuming the 't' parameter, as in YouTube links)
     const seekTime = url.searchParams.has('t')
       ? parseInt(url.searchParams.get('t')!)
       : undefined;
@@ -482,8 +478,8 @@ export default class LogCommand implements ICommand {
           '--no-call-home',
           '--skip-download',
           '--print',
-          '{"title":%(title)j,"channel_id":%(channel_id)j,"channel":%(channel)j,"duration":%(duration)j,"thumbnail":%(thumbnail)j, "description":%(description)j}',
-          id,
+          '{"id":%(id)j,"extractor":%(extractor)j,"title":%(title)j,"channel_id":%(channel_id)j,"channel":%(channel)j,"duration":%(duration)j,"thumbnail":%(thumbnail)j, "description":%(description)j}',
+          url.toString(),
         ],
         {shell: false}
       );
@@ -507,10 +503,12 @@ export default class LogCommand implements ICommand {
           );
         }
 
-        const info: Partial<YouTubeURLExtractedInfo> = {seekTime};
+        const info: Partial<VideoURLExtractedInfo> = {seekTime};
         try {
           const ytdlInfo = JSON.parse(Buffer.concat(stdout).toString());
           info.title = ytdlInfo.title;
+          info.id = ytdlInfo.id;
+          info.extractor = ytdlInfo.extractor;
           info.channelId = ytdlInfo.channel_id;
           info.channelName = ytdlInfo.channel;
           info.duration = ytdlInfo.duration;
@@ -529,12 +527,12 @@ export default class LogCommand implements ICommand {
           return reject(error);
         }
 
-        resolve(info as YouTubeURLExtractedInfo);
+        resolve(info as VideoURLExtractedInfo);
       });
     });
   }
 
-  private async _executeYoutube(
+  private async _executeVideo(
     interaction: ChatInputCommandInteraction
   ): Promise<void> {
     await interaction.deferReply();
@@ -554,12 +552,13 @@ export default class LogCommand implements ICommand {
       return;
     }
 
-    let ytInfo: YouTubeURLExtractedInfo;
+    // Attempt to call yt-dlp to extract info about the user-specified url
+    let vidInfo: VideoURLExtractedInfo;
     try {
-      ytInfo = await this._extractYouTubeInfo(urlComponents);
+      vidInfo = await this._extractVideoInfo(urlComponents);
     } catch (error) {
       await interaction.editReply({
-        content: 'Invalid YouTube URL',
+        content: 'Invalid or unsupported URL',
       });
       return;
     } finally {
@@ -568,13 +567,13 @@ export default class LogCommand implements ICommand {
 
     const enteredDuration = interaction.options.getNumber('duration', false);
 
-    // time from youtube is in seconds but we want minutes
+    // time from yt-dlp is in seconds but we want minutes
     const duration =
-      enteredDuration ?? (ytInfo.seekTime ?? ytInfo.duration) / 60;
+      enteredDuration ?? (vidInfo.seekTime ?? vidInfo.duration) / 60;
 
     const timeIsFrom = enteredDuration
       ? 'from entered value'
-      : ytInfo.seekTime
+      : vidInfo.seekTime
       ? 'from url'
       : 'from video length';
 
@@ -582,10 +581,10 @@ export default class LogCommand implements ICommand {
     const minutes = Math.floor(duration % 60);
 
     const activity = await Activity.create({
-      name: ytInfo.title,
+      name: vidInfo.title,
       url: urlComponents.toString(),
       duration,
-      tags: ['youtube', ytInfo.channelName, ytInfo.channelId],
+      tags: ['video', vidInfo.extractor, vidInfo.channelName, vidInfo.channelId],
       userId: interaction.user.id,
       date: new Date(),
       type: 'listening',
@@ -596,11 +595,11 @@ export default class LogCommand implements ICommand {
       .setFields(
         {
           name: 'Channel',
-          value: ytInfo.channelName,
+          value: vidInfo.channelName,
         },
         {
           name: 'Video',
-          value: ytInfo.title,
+          value: vidInfo.title,
         },
         {
           name: 'Watch Time',
@@ -612,7 +611,7 @@ export default class LogCommand implements ICommand {
         }
       )
       .setFooter({text: `ID: ${activity.id}`})
-      .setImage(ytInfo.thumbnail)
+      .setImage(vidInfo.thumbnail)
       .setTimestamp(activity.date)
       .setColor(this._colors.success);
 
@@ -736,8 +735,8 @@ export default class LogCommand implements ICommand {
   }
 
   public async execute(interaction: ChatInputCommandInteraction) {
-    if (interaction.options.getSubcommand() === 'youtube') {
-      return this._executeYoutube(interaction);
+    if (interaction.options.getSubcommand() === 'video') {
+      return this._executeVideo(interaction);
     } else if (interaction.options.getSubcommand() === 'anime') {
       return this._executeAnime(interaction);
     } else if (interaction.options.getSubcommand() === 'vn') {
