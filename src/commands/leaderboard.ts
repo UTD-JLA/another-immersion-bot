@@ -5,7 +5,7 @@ import {
   EmbedBuilder,
   GuildMember,
 } from 'discord.js';
-import {Activity} from '../models/activity';
+import {Activity, IActivity} from '../models/activity';
 import {inject, injectable} from 'inversify';
 import {IConfig, IColorConfig} from '../config';
 
@@ -166,16 +166,22 @@ function getStartOfTimeframe(timeframe: string): Date {
   }
 }
 
-function minutesAsTimeString(minutes: number) {
-  const days = Math.floor(minutes / 1440);
-  const hours = Math.floor((minutes - days * 1440) / 60);
-  const minutesLeft = minutes - days * 1440 - hours * 60;
+function minutesAsTimeString(totalMinutes: number) {
+  const days = Math.floor(totalMinutes / 1440);
+  const hours = Math.floor((totalMinutes - days * 1440) / 60);
+  const minutes = Math.floor(totalMinutes - days * 1440 - hours * 60);
 
-  let daysString = '';
+  let string = '';
 
   if (days > 0) {
-    daysString = `${days} days, `;
+    string += `${days} days, `;
   }
 
-  return `${daysString}${hours} hours, ${minutesLeft} minutes`;
+  if (hours > 0) {
+    string += `${hours} hours, `;
+  }
+
+  string += `${minutes} minutes`;
+
+  return string;
 }
