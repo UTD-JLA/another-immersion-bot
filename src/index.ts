@@ -10,6 +10,7 @@ import {
   ILoggerService,
 } from './services';
 import {Container} from 'inversify';
+import {sync as commandExistsSync} from 'command-exists';
 
 const config = Config.fromJsonFile(
   process.env['IB_CONFIG_LOCATION'] ?? 'config.json',
@@ -66,4 +67,11 @@ const rest = new REST().setToken(config.token);
   await rest.put(Routes.applicationCommands(clientId), {
     body: container.getAll<ICommand>('Command').map(command => command.data),
   });
+
+  // warn if yt-dlp is not installed
+  if (!commandExistsSync('yt-dlp')) {
+    logger.warn(
+      'yt-dlp is not installed. Some commands may not work as expected.'
+    );
+  }
 })();

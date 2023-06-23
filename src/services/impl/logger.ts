@@ -12,7 +12,18 @@ export default class LoggerService implements ILoggerService {
     this._config = config;
     this._logger = createLogger({
       level: this._config.logLevel,
-      format: format.combine(format.timestamp(), format.json()),
+      format: format.combine(
+        format.timestamp(),
+        format.json(),
+        format.colorize({
+          all: true,
+          colors: {
+            info: 'white',
+            warn: 'yellow',
+            error: 'red',
+          },
+        })
+      ),
       defaultMeta: meta,
       transports: [new transports.Console()],
     });
