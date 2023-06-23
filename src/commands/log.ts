@@ -899,7 +899,6 @@ export default class LogCommand implements ICommand {
       ? await getUserTimezone(
           this._userConfigService,
           this._guildConfigService,
-          dateString,
           interaction.user.id,
           interaction.guildId ?? undefined
         )
