@@ -10,13 +10,23 @@ import {
   ButtonStyle,
 } from 'discord.js';
 import {inject, injectable} from 'inversify';
+import {IGuildConfigService, IUserConfigService} from '../services';
+import {getUserTimezone} from '../util/time';
 
 @injectable()
 export default class HistoryCommand implements ICommand {
   private readonly _colors: IColorConfig;
+  private readonly _userConfigService: IUserConfigService;
+  private readonly _guildConfigService: IGuildConfigService;
 
-  constructor(@inject('Config') private readonly config: IConfig) {
+  constructor(
+    @inject('Config') private readonly config: IConfig,
+    @inject('UserConfigService') userConfigService: IUserConfigService,
+    @inject('GuildConfigService') guildConfigService: IGuildConfigService
+  ) {
     this._colors = config.colors;
+    this._userConfigService = userConfigService;
+    this._guildConfigService = guildConfigService;
   }
 
   public readonly data = <SlashCommandBuilder>new SlashCommandBuilder()
@@ -48,7 +58,15 @@ export default class HistoryCommand implements ICommand {
     const simple = interaction.options.getBoolean('simple') ?? false;
 
     // TODO: Do not fetch all activities at once
-    const activities = await Activity.find({userId}).sort({date: -1});
+    const [activities, timezone] = await Promise.all([
+      Activity.find({userId}).sort({date: -1}),
+      getUserTimezone(
+        this._userConfigService,
+        this._guildConfigService,
+        interaction.user.id,
+        interaction.guild?.id
+      ),
+    ]);
 
     if (activities.length === 0) {
       await interaction.reply('No logs found');
@@ -81,7 +99,8 @@ export default class HistoryCommand implements ICommand {
       activities.slice(0, pageSize),
       showIds,
       page,
-      nPages
+      nPages,
+      timezone
     );
 
     const response = await interaction.reply({
@@ -124,7 +143,8 @@ export default class HistoryCommand implements ICommand {
         activities.slice(startIndex, endIndex),
         showIds,
         page,
-        nPages
+        nPages,
+        timezone
       );
 
       previousButton.setDisabled(page === 0);
@@ -169,17 +189,25 @@ export default class HistoryCommand implements ICommand {
     activities: IActivity[],
     showIds: boolean,
     page: number,
-    nPages: number
+    nPages: number,
+    timezone: string
   ): EmbedBuilder {
-    const embed = new EmbedBuilder().setTitle('History').setFields(
-      activities.map(activity => ({
-        name: `${activity.date.toLocaleDateString()} ${activity.date.toLocaleTimeString()}`,
-        value: `${activity.name}\n(${
-          activity.roundedDuration ?? activity.duration
-        } minutes) ${showIds ? `<${activity._id}>` : ''}`,
-        inline: true,
-      }))
-    );
+    const embed = new EmbedBuilder()
+      .setTitle('History')
+      .setFields(
+        activities.map(activity => ({
+          name: `${activity.date.toLocaleDateString(undefined, {
+            timeZone: timezone,
+          })} ${activity.date.toLocaleTimeString(undefined, {
+            timeZone: timezone,
+          })}`,
+          value: `${activity.name}\n(${
+            activity.roundedDuration ?? activity.duration
+          } minutes) ${showIds ? `<${activity._id}>` : ''}`,
+          inline: true,
+        }))
+      )
+      .setDescription(`Times shown in timezone: ${timezone}`);
 
     if (nPages > 1) {
       embed.setFooter({text: `Page ${page + 1} of ${nPages}`});
