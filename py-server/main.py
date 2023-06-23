@@ -103,9 +103,8 @@ class SimpleChartServer(BaseHTTPRequestHandler):
 if __name__ == '__main__':
     server = HTTPServer(('', 5301), SimpleChartServer)
     try:
-      signal.signal(signal.SIGTERM, server.server_close)
+      signal.signal(signal.SIGTERM, lambda _sig, _frame: server.server_close)
+      print('Listening on port 5301. Use <Ctrl-C> or send SIGTERM to exit.')
       server.serve_forever()
     except KeyboardInterrupt:
-      pass
-    finally:
       server.server_close()
