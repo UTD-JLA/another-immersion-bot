@@ -5,7 +5,7 @@ import {
   EmbedBuilder,
   GuildMember,
 } from 'discord.js';
-import {Activity, IActivity} from '../models/activity';
+import {Activity} from '../models/activity';
 import {inject, injectable} from 'inversify';
 import {IConfig, IColorConfig} from '../config';
 
