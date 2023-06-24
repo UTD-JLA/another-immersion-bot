@@ -35,9 +35,9 @@ Users and guilds can configure some behavior. In some cases, these configuration
 
 Timezones are determined as follows:
 1. Manual Input (ex. `date: yesterday at 8pm JST`)
-2. User config.
-3. Guild config.
-4. CST
+2. User config
+3. Guild config
+4. UTC
 
 with the higher options taking priority.
 
