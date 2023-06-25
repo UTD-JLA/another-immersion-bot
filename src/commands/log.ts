@@ -471,7 +471,7 @@ export default class LogCommand implements ICommand {
       );
   }
 
-  private static KNOWN_DOMAIN_TAGS = new Map<string, string>([
+  private static KNOWN_HOST_TAGS = new Map<string, string>([
     ['youtube.com', 'youtube'],
     ['youtu.be', 'youtube'],
   ]);
@@ -485,8 +485,7 @@ export default class LogCommand implements ICommand {
     }
 
     const domainName = parts[parts.length - 2];
-    const domainTag =
-      LogCommand.KNOWN_DOMAIN_TAGS.get(domainName) ?? domainName;
+    const domainTag = LogCommand.KNOWN_HOST_TAGS.get(hostname) ?? domainName;
 
     // TODO: Maybe try to attempt yt-dlp extraction on all urls
     if (domainTag === 'youtube') {
