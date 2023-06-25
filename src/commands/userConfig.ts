@@ -38,6 +38,11 @@ export default class UserConfigCommand implements ICommand {
             .setName('reading-speed')
             .setDescription('Get your current reading speed')
         )
+        .addSubcommand(subcommand =>
+          subcommand
+            .setName('daily-goal')
+            .setDescription('Get your current daily goal')
+        )
     )
     .addSubcommandGroup(group =>
       group
@@ -64,6 +69,19 @@ export default class UserConfigCommand implements ICommand {
                 .setDescription('Your reading speed')
                 .setRequired(true)
                 .setMinValue(0)
+            )
+        )
+        .addSubcommand(subcommand =>
+          subcommand
+            .setName('daily-goal')
+            .setDescription('Set your daily goal')
+            .addIntegerOption(option =>
+              option
+                .setName('daily-goal')
+                .setDescription('Your daily goal')
+                .setRequired(true)
+                .setMinValue(0)
+                .setMaxValue(1440)
             )
         )
     );
@@ -116,6 +134,18 @@ export default class UserConfigCommand implements ICommand {
         content: `Set your reading speed to ${readingSpeed}`,
         ephemeral: true,
       });
+    } else if (subcommand === 'daily-goal') {
+      const dailyGoal = interaction.options.getInteger('daily-goal', true);
+
+      await this._userConfigService.setDailyGoal(
+        interaction.user.id,
+        dailyGoal
+      );
+
+      await interaction.reply({
+        content: `Set your daily goal to ${dailyGoal}`,
+        ephemeral: true,
+      });
     }
   }
 
@@ -158,9 +188,7 @@ export default class UserConfigCommand implements ICommand {
       }
 
       embed.addFields(fields);
-    }
-
-    if (subcommand === 'reading-speed') {
+    } else if (subcommand === 'reading-speed') {
       const readingSpeed = await this._userConfigService.getReadingSpeed(
         interaction.user.id
       );
@@ -168,6 +196,15 @@ export default class UserConfigCommand implements ICommand {
       embed.addFields({
         name: 'Reading Speed',
         value: readingSpeed?.toString() ?? 'Not set',
+      });
+    } else if (subcommand === 'daily-goal') {
+      const dailyGoal = await this._userConfigService.getDailyGoal(
+        interaction.user.id
+      );
+
+      embed.addFields({
+        name: 'Daily Goal',
+        value: dailyGoal ? `${dailyGoal} minutes` : 'Not set',
       });
     }
 

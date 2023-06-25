@@ -44,9 +44,13 @@ export interface IMaterialSourceService {
 }
 
 export interface ILoggerService {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   log(message: string, meta?: any): void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   error(message: string, meta?: any): void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   warn(message: string, meta?: any): void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   child(meta: any): ILoggerService;
 }
 
@@ -73,4 +77,6 @@ export interface IUserConfigService {
   setTimezone(userId: string, timezone: string): Promise<void>;
   getReadingSpeed(userId: string): Promise<number | undefined>;
   setReadingSpeed(userId: string, readingSpeed: number): Promise<void>;
+  getDailyGoal(userId: string): Promise<number | undefined>;
+  setDailyGoal(userId: string, dailyGoal: number): Promise<void>;
 }
