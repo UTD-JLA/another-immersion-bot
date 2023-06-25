@@ -774,12 +774,10 @@ export default class LogCommand implements ICommand {
     );
 
     const charCount = interaction.options.getNumber('characters', true);
-    const userReadingSpeed =
+    const charPerMinute =
+      interaction.options.getNumber('reading-speed', false) ??
       (await this._userConfigService.getReadingSpeed(interaction.user.id)) ??
       350;
-    const charPerMinute =
-      interaction.options.getNumber('characters-per-minute', false) ??
-      userReadingSpeed;
 
     const duration = charCount / charPerMinute;
 
