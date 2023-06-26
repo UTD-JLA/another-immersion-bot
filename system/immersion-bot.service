@@ -1,0 +1,14 @@
+[Unit]
+Description=Discord immersion bot
+Requires=immersion-bot-server.service
+After=network.target network-online.target immersion-bot-server.service
+
+[Service]
+User=1000
+Group=1000
+Type=simple
+WorkingDirectory=/path/to/bot/dist/
+ExecStart=/path/to/bot/dist/another-immersion-bot
+
+[Install]
+WantedBy=default.target

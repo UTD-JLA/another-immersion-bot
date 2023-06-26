@@ -1,0 +1,10 @@
+[Unit]
+Description=Discord immersion bot server
+After=network.target network-online.target
+
+[Service]
+User=1000
+Group=1000
+Type=simple
+WorkingDirectory=/path/to/bot/dist/
+ExecStart=/path/to/bot/dist/py-server
