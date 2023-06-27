@@ -24,6 +24,9 @@ export default class UserConfigCommand implements ICommand {
   public readonly data = <SlashCommandBuilder>new SlashCommandBuilder()
     .setName('user-config')
     .setDescription('Update your user experience')
+    .addSubcommand(group =>
+      group.setName('get-all').setDescription('Get your current user config')
+    )
     .addSubcommandGroup(group =>
       group
         .setName('get')
@@ -87,7 +90,15 @@ export default class UserConfigCommand implements ICommand {
     );
 
   public async execute(interaction: ChatInputCommandInteraction) {
-    const group = interaction.options.getSubcommandGroup(true);
+    const group = interaction.options.getSubcommandGroup(false);
+
+    if (!group) {
+      const subcommand = interaction.options.getSubcommand(true);
+      if (subcommand === 'get-all') {
+        await this._executeGetAll(interaction);
+      }
+      return;
+    }
 
     if (group === 'get') {
       await this._executeGet(interaction);
@@ -96,6 +107,38 @@ export default class UserConfigCommand implements ICommand {
     if (group === 'set') {
       await this._executeSet(interaction);
     }
+  }
+
+  private async _executeGetAll(interaction: ChatInputCommandInteraction) {
+    await interaction.deferReply({ephemeral: true});
+
+    const config = await this._userConfigService.getUserConfig(
+      interaction.user.id
+    );
+
+    const embed = new EmbedBuilder()
+      .setTitle('User Config')
+      .setAuthor({
+        name: interaction.user.username,
+        iconURL: interaction.user.avatarURL()!,
+      })
+      .setColor(this._config.colors.info)
+      .addFields([
+        {
+          name: 'Your Timezone',
+          value: config.timezone ?? 'Not set',
+        },
+        {
+          name: 'Your Reading Speed',
+          value: config.readingSpeed?.toString() ?? 'Not set',
+        },
+        {
+          name: 'Your Daily Goal',
+          value: config.dailyGoal?.toString() ?? 'Not set',
+        },
+      ]);
+
+    await interaction.editReply({embeds: [embed]});
   }
 
   private async _executeSet(interaction: ChatInputCommandInteraction) {

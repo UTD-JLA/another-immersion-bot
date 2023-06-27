@@ -34,6 +34,17 @@ export default class UserConfigService implements IUserConfigService {
     this._cache.set(userId, newConfig.toObject());
   }
 
+  updateUserConfig(
+    userId: string,
+    config: Partial<Omit<IUserConfig, 'userId'>>
+  ): Promise<void> {
+    return this._updateUserConfig(userId, config);
+  }
+
+  getUserConfig(userId: string): Promise<IUserConfig> {
+    return this._getUserConfig(userId);
+  }
+
   async getTimezone(userId: string): Promise<string | undefined> {
     const config = await this._getUserConfig(userId);
     return config.timezone;

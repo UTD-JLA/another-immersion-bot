@@ -2,6 +2,7 @@ import {Stream} from 'stream';
 import {Stringifiable} from '../util/types';
 import {Locale} from 'discord.js';
 import {IGuildConfig} from '../models/guildConfig';
+import {IUserConfig} from '../models/userConfig';
 
 export interface ISuggestion {
   name: string;
@@ -73,6 +74,11 @@ export interface IGuildConfigService {
 }
 
 export interface IUserConfigService {
+  updateUserConfig(
+    userId: string,
+    config: Partial<Omit<IUserConfig, 'userId'>>
+  ): Promise<void>;
+  getUserConfig(userId: string): Promise<IUserConfig>;
   getTimezone(userId: string): Promise<string | undefined>;
   setTimezone(userId: string, timezone: string): Promise<void>;
   getReadingSpeed(userId: string): Promise<number | undefined>;
