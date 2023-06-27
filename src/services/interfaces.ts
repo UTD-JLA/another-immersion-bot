@@ -36,7 +36,9 @@ export interface IChartService {
       y: number;
     }[],
     color: string,
-    buckets: number
+    buckets: number,
+    horizontal: number,
+    horizontalColor: string
   ): Promise<Stream>;
 }
 

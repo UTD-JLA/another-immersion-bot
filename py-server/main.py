@@ -72,6 +72,8 @@ class SimpleChartServer(BaseHTTPRequestHandler):
           chart_data = list(data.get('data', []))
           buckets = data.get('buckets', 7)
           color = data.get('color', 'm')
+          horizontal_color = data.get('horizontal_color', 'r')
+          horizontal = data.get('horizontal', 0)
 
           xtick_locator = AutoDateLocator()
           xtick_formatter = AutoDateFormatter(xtick_locator)
@@ -89,6 +91,9 @@ class SimpleChartServer(BaseHTTPRequestHandler):
           df = df.set_index('x').reindex(r).fillna(0.0).rename_axis('x').reset_index()
 
           ax.hist(date2num(df['x']), buckets, weights=df['y'], color=color, rwidth=0.7)
+
+          if horizontal > 0:
+            ax.axhline(y=horizontal, color=horizontal_color, linestyle='--')
 
           buf = io.BytesIO()
           ax.figure.savefig(buf, format='png')
