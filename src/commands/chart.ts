@@ -144,7 +144,9 @@ export default class ChartCommand implements ICommand {
       nBuckets = 12;
     }
 
-    const timeDeltaDays = calculateDeltaInDays(endDate, beginningDate);
+    const timeDeltaDays = Math.ceil(
+      calculateDeltaInDays(endDate, beginningDate)
+    );
 
     // calculate the number of buckets based on the time delta
     if (span === 'custom') {

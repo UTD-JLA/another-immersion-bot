@@ -42,5 +42,5 @@ export function calculateDelta(first: Date, second: Date): number {
 
 export function calculateDeltaInDays(first: Date, second: Date): number {
   const delta = calculateDelta(first, second);
-  return Math.floor(delta / (1000 * 60 * 60 * 24));
+  return delta / (1000 * 60 * 60 * 24);
 }
