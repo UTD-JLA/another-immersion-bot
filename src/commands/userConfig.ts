@@ -24,6 +24,9 @@ export default class UserConfigCommand implements ICommand {
   public readonly data = <SlashCommandBuilder>new SlashCommandBuilder()
     .setName('user-config')
     .setDescription('Update your user experience')
+    .addSubcommand(group =>
+      group.setName('get-all').setDescription('Get your current user config')
+    )
     .addSubcommandGroup(group =>
       group
         .setName('get')
@@ -37,6 +40,11 @@ export default class UserConfigCommand implements ICommand {
           subcommand
             .setName('reading-speed')
             .setDescription('Get your current reading speed')
+        )
+        .addSubcommand(subcommand =>
+          subcommand
+            .setName('daily-goal')
+            .setDescription('Get your current daily goal')
         )
     )
     .addSubcommandGroup(group =>
@@ -66,10 +74,31 @@ export default class UserConfigCommand implements ICommand {
                 .setMinValue(0)
             )
         )
+        .addSubcommand(subcommand =>
+          subcommand
+            .setName('daily-goal')
+            .setDescription('Set your daily goal')
+            .addIntegerOption(option =>
+              option
+                .setName('daily-goal')
+                .setDescription('Your daily goal')
+                .setRequired(true)
+                .setMinValue(0)
+                .setMaxValue(1440)
+            )
+        )
     );
 
   public async execute(interaction: ChatInputCommandInteraction) {
-    const group = interaction.options.getSubcommandGroup(true);
+    const group = interaction.options.getSubcommandGroup(false);
+
+    if (!group) {
+      const subcommand = interaction.options.getSubcommand(true);
+      if (subcommand === 'get-all') {
+        await this._executeGetAll(interaction);
+      }
+      return;
+    }
 
     if (group === 'get') {
       await this._executeGet(interaction);
@@ -78,6 +107,38 @@ export default class UserConfigCommand implements ICommand {
     if (group === 'set') {
       await this._executeSet(interaction);
     }
+  }
+
+  private async _executeGetAll(interaction: ChatInputCommandInteraction) {
+    await interaction.deferReply({ephemeral: true});
+
+    const config = await this._userConfigService.getUserConfig(
+      interaction.user.id
+    );
+
+    const embed = new EmbedBuilder()
+      .setTitle('User Config')
+      .setAuthor({
+        name: interaction.user.username,
+        iconURL: interaction.user.avatarURL()!,
+      })
+      .setColor(this._config.colors.info)
+      .addFields([
+        {
+          name: 'Your Timezone',
+          value: config.timezone ?? 'Not set',
+        },
+        {
+          name: 'Your Reading Speed',
+          value: config.readingSpeed?.toString() ?? 'Not set',
+        },
+        {
+          name: 'Your Daily Goal',
+          value: config.dailyGoal?.toString() ?? 'Not set',
+        },
+      ]);
+
+    await interaction.editReply({embeds: [embed]});
   }
 
   private async _executeSet(interaction: ChatInputCommandInteraction) {
@@ -114,6 +175,18 @@ export default class UserConfigCommand implements ICommand {
 
       await interaction.reply({
         content: `Set your reading speed to ${readingSpeed}`,
+        ephemeral: true,
+      });
+    } else if (subcommand === 'daily-goal') {
+      const dailyGoal = interaction.options.getInteger('daily-goal', true);
+
+      await this._userConfigService.setDailyGoal(
+        interaction.user.id,
+        dailyGoal
+      );
+
+      await interaction.reply({
+        content: `Set your daily goal to ${dailyGoal}`,
         ephemeral: true,
       });
     }
@@ -158,9 +231,7 @@ export default class UserConfigCommand implements ICommand {
       }
 
       embed.addFields(fields);
-    }
-
-    if (subcommand === 'reading-speed') {
+    } else if (subcommand === 'reading-speed') {
       const readingSpeed = await this._userConfigService.getReadingSpeed(
         interaction.user.id
       );
@@ -168,6 +239,15 @@ export default class UserConfigCommand implements ICommand {
       embed.addFields({
         name: 'Reading Speed',
         value: readingSpeed?.toString() ?? 'Not set',
+      });
+    } else if (subcommand === 'daily-goal') {
+      const dailyGoal = await this._userConfigService.getDailyGoal(
+        interaction.user.id
+      );
+
+      embed.addFields({
+        name: 'Daily Goal',
+        value: dailyGoal ? `${dailyGoal} minutes` : 'Not set',
       });
     }
 

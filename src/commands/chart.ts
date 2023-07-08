@@ -144,7 +144,9 @@ export default class ChartCommand implements ICommand {
       nBuckets = 12;
     }
 
-    const timeDeltaDays = calculateDeltaInDays(endDate, beginningDate);
+    const timeDeltaDays = Math.ceil(
+      calculateDeltaInDays(endDate, beginningDate)
+    );
 
     // calculate the number of buckets based on the time delta
     if (span === 'custom') {
@@ -160,7 +162,7 @@ export default class ChartCommand implements ICommand {
     }
 
     // Get activities from the last week and group by day
-    const activities = await Activity.aggregate([
+    const activitiesPromise = await Activity.aggregate([
       {
         $match: {
           userId: interaction.user.id,
@@ -193,6 +195,17 @@ export default class ChartCommand implements ICommand {
     const beginningString = beginningDate.toISOString().slice(0, 10);
     const endString = endDate.toISOString().slice(0, 10);
 
+    const dailyGoalPromise = this._userService.getDailyGoal(
+      interaction.user.id
+    );
+
+    const daysPerBucket = timeDeltaDays / nBuckets;
+
+    const [activities, bucketGoal] = await Promise.all([
+      activitiesPromise,
+      dailyGoalPromise.then(dailyGoal => (dailyGoal ?? 0) * daysPerBucket),
+    ]);
+
     if (!activities.find(a => a._id === beginningString)) {
       activities.unshift({
         _id: beginningString,
@@ -210,7 +223,9 @@ export default class ChartCommand implements ICommand {
     const chart = await this._chartService.getDateBarChartPng(
       activities.map(a => ({x: a._id, y: a.count})),
       this._colors.secondary,
-      nBuckets
+      nBuckets,
+      bucketGoal,
+      this._colors.primary
     );
 
     const maxIndex = activities.reduce((acc, curr, index) => {
@@ -241,7 +256,7 @@ export default class ChartCommand implements ICommand {
         : 'week';
     const bucketDescription =
       span === 'custom'
-        ? `${(timeDeltaDays / nBuckets).toPrecision(2)} days`
+        ? `${daysPerBucket.toPrecision(2)} days`
         : span === 'yearly'
         ? 'one month'
         : 'one day';

@@ -77,12 +77,16 @@ export default class ChartService implements IChartService {
       y: number;
     }[],
     color: string,
-    buckets: number
+    buckets: number,
+    horizontal = -1,
+    horizontalColor = 'r'
   ): Promise<Stream> {
     const body = JSON.stringify({
       data,
       color,
       buckets,
+      horizontal,
+      horizontal_color: horizontalColor,
     });
 
     return new Promise<Stream>((resolve, reject) => {

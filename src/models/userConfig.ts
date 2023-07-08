@@ -6,6 +6,7 @@ export interface IUserConfig {
   userId: string;
   timezone?: string;
   readingSpeed?: number;
+  dailyGoal?: number;
 }
 
 const schema = new Schema<IUserConfig>({
@@ -21,6 +22,11 @@ const schema = new Schema<IUserConfig>({
     type: Number,
     min: 0,
     max: 1000,
+  },
+  dailyGoal: {
+    type: Number,
+    min: 0,
+    max: 1440,
   },
 });
 

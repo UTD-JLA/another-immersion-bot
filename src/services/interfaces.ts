@@ -2,6 +2,7 @@ import {Stream} from 'stream';
 import {Stringifiable} from '../util/types';
 import {Locale} from 'discord.js';
 import {IGuildConfig} from '../models/guildConfig';
+import {IUserConfig} from '../models/userConfig';
 
 export interface ISuggestion {
   name: string;
@@ -35,7 +36,9 @@ export interface IChartService {
       y: number;
     }[],
     color: string,
-    buckets: number
+    buckets: number,
+    horizontal: number,
+    horizontalColor: string
   ): Promise<Stream>;
 }
 
@@ -44,9 +47,13 @@ export interface IMaterialSourceService {
 }
 
 export interface ILoggerService {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   log(message: string, meta?: any): void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   error(message: string, meta?: any): void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   warn(message: string, meta?: any): void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   child(meta: any): ILoggerService;
 }
 
@@ -69,8 +76,15 @@ export interface IGuildConfigService {
 }
 
 export interface IUserConfigService {
+  updateUserConfig(
+    userId: string,
+    config: Partial<Omit<IUserConfig, 'userId'>>
+  ): Promise<void>;
+  getUserConfig(userId: string): Promise<IUserConfig>;
   getTimezone(userId: string): Promise<string | undefined>;
   setTimezone(userId: string, timezone: string): Promise<void>;
   getReadingSpeed(userId: string): Promise<number | undefined>;
   setReadingSpeed(userId: string, readingSpeed: number): Promise<void>;
+  getDailyGoal(userId: string): Promise<number | undefined>;
+  setDailyGoal(userId: string, dailyGoal: number): Promise<void>;
 }
