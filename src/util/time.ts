@@ -1,5 +1,5 @@
 import {IGuildConfigService, IUserConfigService} from '../services';
-import {parseDate} from 'chrono-node';
+import moment from 'moment-timezone';
 
 export async function getUserTimezone(
   userService: IUserConfigService,
@@ -32,7 +32,8 @@ export async function parseTimeWithUserTimezone(
     defaultTz
   );
 
-  return parseDate(time, {timezone: tz});
+  const date = moment.tz(time, 'YYYY-MM-DD HH:mm', tz);
+  return date.isValid() ? date.toDate() : null;
 }
 
 export function calculateDelta(first: Date, second: Date): number {

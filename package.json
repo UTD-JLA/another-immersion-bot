@@ -29,11 +29,11 @@
     "typescript": "~4.7.0"
   },
   "dependencies": {
-    "chrono-node": "^2.6.3",
     "command-exists": "^1.2.9",
     "csv-string": "^4.1.1",
     "discord.js": "^14.11.0",
     "inversify": "^6.0.1",
+    "moment-timezone": "^0.5.43",
     "mongoose": "^7.3.0",
     "reflect-metadata": "^0.1.13",
     "winston": "^3.9.0"
