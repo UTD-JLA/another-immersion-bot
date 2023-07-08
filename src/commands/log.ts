@@ -471,7 +471,7 @@ export default class LogCommand implements ICommand {
       );
   }
 
-  private static KNOWN_DOMAIN_TAGS = new Map<string, string>([
+  private static KNOWN_HOST_TAGS = new Map<string, string>([
     ['youtube.com', 'youtube'],
     ['youtu.be', 'youtube'],
   ]);
@@ -485,8 +485,7 @@ export default class LogCommand implements ICommand {
     }
 
     const domainName = parts[parts.length - 2];
-    const domainTag =
-      LogCommand.KNOWN_DOMAIN_TAGS.get(domainName) ?? domainName;
+    const domainTag = LogCommand.KNOWN_HOST_TAGS.get(hostname) ?? domainName;
 
     // TODO: Maybe try to attempt yt-dlp extraction on all urls
     if (domainTag === 'youtube') {
@@ -641,9 +640,6 @@ export default class LogCommand implements ICommand {
       ? 'from url'
       : 'from video length';
 
-    const hours = Math.floor(duration / 60);
-    const minutes = Math.floor(duration % 60);
-
     const activity = await Activity.create({
       name: vidInfo.title,
       url: urlComponents.toString(),
@@ -672,7 +668,7 @@ export default class LogCommand implements ICommand {
         },
         {
           name: 'Watch Time',
-          value: `${hours}h ${minutes}m (${timeIsFrom})`,
+          value: activity.formattedDuration! + ` (${timeIsFrom})`,
         },
         {
           name: 'Auto-Tagged',
@@ -751,7 +747,7 @@ export default class LogCommand implements ICommand {
         },
         {
           name: 'Total Watch Time',
-          value: `${Math.floor(duration / 60)}h ${duration % 60}m`,
+          value: activity.formattedDuration!,
         }
       )
       .setFooter({text: `ID: ${activity.id}`})
@@ -774,12 +770,10 @@ export default class LogCommand implements ICommand {
     );
 
     const charCount = interaction.options.getNumber('characters', true);
-    const userReadingSpeed =
+    const charPerMinute =
+      interaction.options.getNumber('reading-speed', false) ??
       (await this._userConfigService.getReadingSpeed(interaction.user.id)) ??
       350;
-    const charPerMinute =
-      interaction.options.getNumber('characters-per-minute', false) ??
-      userReadingSpeed;
 
     const duration = charCount / charPerMinute;
 
@@ -829,7 +823,7 @@ export default class LogCommand implements ICommand {
         },
         {
           name: 'Total Read Time',
-          value: `${Math.floor(duration / 60)}h ${duration % 60}m`,
+          value: activity.formattedDuration!,
         }
       )
       .setFooter({text: `ID: ${activity.id}`})

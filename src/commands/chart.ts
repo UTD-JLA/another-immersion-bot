@@ -134,9 +134,10 @@ export default class ChartCommand implements ICommand {
       beginningDate.setTime(actualBeginningDate.getTime());
       endDate.setTime(actualEndDate.getTime());
     } else if (span === 'weekly') {
-      beginningDate.setDate(beginningDate.getDate() - 7);
+      beginningDate.setDate(beginningDate.getDate() - 6);
+      beginningDate.setHours(0, 0, 0, 0);
     } else if (span === 'monthly') {
-      beginningDate.setMonth(beginningDate.getMonth() - 1);
+      beginningDate.setDate(beginningDate.getDate() - 29);
       nBuckets = 30;
     } else if (span === 'yearly') {
       beginningDate.setFullYear(beginningDate.getFullYear() - 1);

@@ -87,7 +87,7 @@ class SimpleChartServer(BaseHTTPRequestHandler):
           y = list(map(lambda d: d['y'], chart_data))
 
           df = pd.DataFrame({'x': x, 'y': y})
-          r = pd.date_range(start=df['x'].min(), end=df['x'].max())
+          r = pd.date_range(start=df['x'].min(), end=df['x'].max() + datetime.timedelta(days=1))
           df = df.set_index('x').reindex(r).fillna(0.0).rename_axis('x').reset_index()
 
           ax.hist(date2num(df['x']), buckets, weights=df['y'], color=color, rwidth=0.7)
