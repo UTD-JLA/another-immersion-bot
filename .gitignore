@@ -7,3 +7,4 @@ config.json
 *.spec
 venv/
 bundle/
+dist-*.tar.gz
