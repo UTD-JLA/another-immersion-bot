@@ -1,5 +1,4 @@
 import {
-  SlashCommandBuilder,
   ChatInputCommandInteraction,
   AutocompleteInteraction,
   EmbedBuilder,
@@ -19,6 +18,7 @@ import {LimitedResourceLock} from '../util/limitedResource';
 import {cpus} from 'os';
 import {IColorConfig, IConfig} from '../config';
 import {getUserTimezone, parseTimeWithUserTimezone} from '../util/time';
+import {getCommandBuilder} from './log.data';
 
 interface VideoURLExtractedInfo {
   title: string;
@@ -46,6 +46,13 @@ export default class LogCommand implements ICommand {
     cpus().length * 10
   );
 
+  private static readonly KNOWN_HOST_TAGS = new Map<string, string>([
+    ['youtube.com', 'youtube'],
+    ['youtu.be', 'youtube'],
+  ]);
+
+  private static readonly BASE_READING_SPEED = 200; // words per minute
+
   constructor(
     @inject('AutocompletionService')
     autocompleteService: IAutocompletionService,
@@ -65,416 +72,8 @@ export default class LogCommand implements ICommand {
 
   // TODO: anime, vn, etc. shortcuts
   public get data() {
-    return <SlashCommandBuilder>new SlashCommandBuilder()
-      .setName('log')
-      .setNameLocalizations(
-        this._localizationService.getAllLocalizations('log.name')
-      )
-      .setDescription('Log an activity')
-      .setDescriptionLocalizations(
-        this._localizationService.getAllLocalizations('log.description')
-      )
-      .addSubcommand(subcommand =>
-        subcommand
-          .setName('video')
-          .setNameLocalizations(
-            this._localizationService.getAllLocalizations('log.video.name')
-          )
-          .setDescription(
-            'Log a video from a yt-dlp supported site, like YouTube or NicoNico'
-          )
-          .setDescriptionLocalizations(
-            this._localizationService.getAllLocalizations(
-              'log.video.description'
-            )
-          )
-          .addStringOption(option =>
-            option
-              .setName('url')
-              .setNameLocalizations(
-                this._localizationService.getAllLocalizations(
-                  'log.video.url.name'
-                )
-              )
-              .setDescription('URL of the video')
-              .setDescriptionLocalizations(
-                this._localizationService.getAllLocalizations(
-                  'log.video.url.description'
-                )
-              )
-              .setRequired(true)
-          )
-          .addNumberOption(option =>
-            option
-              .setName('duration')
-              .setNameLocalizations(
-                this._localizationService.getAllLocalizations(
-                  'log.video.duration.name'
-                )
-              )
-              .setDescription('Duration of the activity in minutes')
-              .setDescriptionLocalizations(
-                this._localizationService.getAllLocalizations(
-                  'log.video.duration.description'
-                )
-              )
-              .setMinValue(0)
-              .setRequired(false)
-          )
-          .addStringOption(option =>
-            option
-              .setName('date')
-              .setNameLocalizations(
-                this._localizationService.getAllLocalizations(
-                  'log.video.date.name'
-                )
-              )
-              .setDescription('Date and or time of the activity')
-              .setDescriptionLocalizations(
-                this._localizationService.getAllLocalizations(
-                  'log.video.date.description'
-                )
-              )
-              .setRequired(false)
-          )
-      )
-      .addSubcommand(subcommand =>
-        subcommand
-          .setName('anime')
-          .setNameLocalizations(
-            this._localizationService.getAllLocalizations('log.anime.name')
-          )
-          .setDescription('Log an anime episode')
-          .setDescriptionLocalizations(
-            this._localizationService.getAllLocalizations(
-              'log.anime.description'
-            )
-          )
-          .addNumberOption(option =>
-            option
-              .setName('episodes')
-              .setNameLocalizations(
-                this._localizationService.getAllLocalizations(
-                  'log.anime.episodes.name'
-                )
-              )
-              .setDescription('How many episodes')
-              .setDescriptionLocalizations(
-                this._localizationService.getAllLocalizations(
-                  'log.anime.episodes.description'
-                )
-              )
-              .setMinValue(1)
-              .setRequired(true)
-          )
-          .addStringOption(option =>
-            option
-              .setName('anime-name')
-              .setNameLocalizations(
-                this._localizationService.getAllLocalizations(
-                  'log.anime.anime-name.name'
-                )
-              )
-              .setDescription('Name of the anime')
-              .setDescriptionLocalizations(
-                this._localizationService.getAllLocalizations(
-                  'log.anime.anime-name.description'
-                )
-              )
-              .setRequired(true)
-              .setAutocomplete(true)
-          )
-          .addNumberOption(option =>
-            option
-              .setName('episode-length')
-              .setNameLocalizations(
-                this._localizationService.getAllLocalizations(
-                  'log.anime.episode-length.name'
-                )
-              )
-              .setDescription('Length of each episode in minutes')
-              .setDescriptionLocalizations(
-                this._localizationService.getAllLocalizations(
-                  'log.anime.episode-length.description'
-                )
-              )
-              .setMinValue(0)
-              .setRequired(false)
-          )
-          .addStringOption(option =>
-            option
-              .setName('date')
-              .setNameLocalizations(
-                this._localizationService.getAllLocalizations(
-                  'log.anime.date.name'
-                )
-              )
-              .setDescription('Date and or time of the activity')
-              .setDescriptionLocalizations(
-                this._localizationService.getAllLocalizations(
-                  'log.anime.date.description'
-                )
-              )
-              .setRequired(false)
-          )
-      )
-      .addSubcommand(subcommand =>
-        subcommand
-          .setName('vn')
-          .setNameLocalizations(
-            this._localizationService.getAllLocalizations('log.vn.name')
-          )
-          .setDescription('Log a visual novel')
-          .setDescriptionLocalizations(
-            this._localizationService.getAllLocalizations('log.vn.description')
-          )
-          .addNumberOption(option =>
-            option
-              .setName('characters')
-              .setNameLocalizations(
-                this._localizationService.getAllLocalizations(
-                  'log.vn.characters.name'
-                )
-              )
-              .setDescription('How many characters')
-              .setDescriptionLocalizations(
-                this._localizationService.getAllLocalizations(
-                  'log.vn.characters.description'
-                )
-              )
-              .setMinValue(0)
-              .setRequired(true)
-          )
-          .addStringOption(option =>
-            option
-              .setName('vn-name')
-              .setNameLocalizations(
-                this._localizationService.getAllLocalizations(
-                  'log.vn.vn-name.name'
-                )
-              )
-              .setDescription('Name of the visual novel')
-              .setDescriptionLocalizations(
-                this._localizationService.getAllLocalizations(
-                  'log.vn.vn-name.description'
-                )
-              )
-              .setRequired(true)
-              .setAutocomplete(true)
-          )
-          .addNumberOption(option =>
-            option
-              .setName('reading-speed')
-              .setNameLocalizations(
-                this._localizationService.getAllLocalizations(
-                  'log.vn.reading-speed.name'
-                )
-              )
-              .setDescription('Reading speed in characters per minute')
-              .setDescriptionLocalizations(
-                this._localizationService.getAllLocalizations(
-                  'log.vn.reading-speed.description'
-                )
-              )
-              .setMinValue(0)
-              .setRequired(false)
-          )
-          .addStringOption(option =>
-            option
-              .setName('date')
-              .setNameLocalizations(
-                this._localizationService.getAllLocalizations(
-                  'log.vn.date.name'
-                )
-              )
-              .setDescription('Date/time of the activity')
-              .setDescriptionLocalizations(
-                this._localizationService.getAllLocalizations(
-                  'log.vn.date.description'
-                )
-              )
-              .setRequired(false)
-          )
-      )
-      .addSubcommand(subcommand =>
-        subcommand
-          .setName('manual')
-          .setNameLocalizations(
-            this._localizationService.getAllLocalizations('log.manual.name')
-          )
-          .setDescription('Log an activity manually')
-          .setDescriptionLocalizations(
-            this._localizationService.getAllLocalizations(
-              'log.manual.description'
-            )
-          )
-          .addStringOption(option =>
-            option
-              .setName('type')
-              .setNameLocalizations(
-                this._localizationService.getAllLocalizations(
-                  'log.manual.type.name'
-                )
-              )
-              .setDescription('Type of the activity')
-              .setDescriptionLocalizations(
-                this._localizationService.getAllLocalizations(
-                  'log.manual.type.description'
-                )
-              )
-              .setRequired(true)
-              .addChoices(
-                {
-                  name: 'Listening',
-                  value: 'listening',
-                  name_localizations:
-                    this._localizationService.getAllLocalizations(
-                      'log.manual.type.listening.name'
-                    ),
-                },
-                {
-                  name: 'Reading',
-                  value: 'reading',
-                  name_localizations:
-                    this._localizationService.getAllLocalizations(
-                      'log.manual.type.reading.name'
-                    ),
-                }
-              )
-          )
-          .addNumberOption(option =>
-            option
-              .setName('duration')
-              .setNameLocalizations(
-                this._localizationService.getAllLocalizations(
-                  'log.manual.duration.name'
-                )
-              )
-              .setDescription('Duration of the activity in minutes')
-              .setDescriptionLocalizations(
-                this._localizationService.getAllLocalizations(
-                  'log.manual.duration.description'
-                )
-              )
-              .setMinValue(0)
-              .setRequired(true)
-          )
-          .addStringOption(option =>
-            option
-              .setName('name')
-              .setNameLocalizations(
-                this._localizationService.getAllLocalizations(
-                  'log.manual.name.name'
-                )
-              )
-              .setDescription('Name of the activity')
-              .setDescriptionLocalizations(
-                this._localizationService.getAllLocalizations(
-                  'log.manual.name.description'
-                )
-              )
-              .setAutocomplete(true)
-              .setRequired(true)
-          )
-          .addStringOption(option =>
-            option
-              .setName('url')
-              .setNameLocalizations(
-                this._localizationService.getAllLocalizations(
-                  'log.manual.url.name'
-                )
-              )
-              .setDescription('URL of the activity')
-              .setDescriptionLocalizations(
-                this._localizationService.getAllLocalizations(
-                  'log.manual.url.description'
-                )
-              )
-              .setRequired(false)
-          )
-          .addStringOption(option =>
-            option
-              .setName('date')
-              .setNameLocalizations(
-                this._localizationService.getAllLocalizations(
-                  'log.manual.date.name'
-                )
-              )
-              .setDescription(
-                'Date/time of the activity (ex. "2021-01-01", "13:00", "January 1 2021", "01 Jan 1970 00:00:00 GMT")'
-              )
-              .setDescriptionLocalizations(
-                this._localizationService.getAllLocalizations(
-                  'log.manual.date.description'
-                )
-              )
-              .setRequired(false)
-          )
-          .addStringOption(option =>
-            option
-              .setName('unit')
-              .setNameLocalizations(
-                this._localizationService.getAllLocalizations(
-                  'log.manual.unit.name'
-                )
-              )
-              .setDescription('Unit of the duration')
-              .setDescriptionLocalizations(
-                this._localizationService.getAllLocalizations(
-                  'log.manual.unit.description'
-                )
-              )
-              .addChoices(
-                {
-                  name: 'Episodes',
-                  value: 'episode',
-                  name_localizations:
-                    this._localizationService.getAllLocalizations(
-                      'log.manual.unit.episode.name'
-                    ),
-                },
-                {
-                  name: 'Characters',
-                  value: 'character',
-                  name_localizations:
-                    this._localizationService.getAllLocalizations(
-                      'log.manual.unit.character.name'
-                    ),
-                },
-                {
-                  name: 'Minute (default)',
-                  value: 'minute',
-                  name_localizations:
-                    this._localizationService.getAllLocalizations(
-                      'log.manual.unit.minute.name'
-                    ),
-                }
-              )
-              .setRequired(false)
-          )
-          .addStringOption(option =>
-            option
-              .setName('tags')
-              .setNameLocalizations(
-                this._localizationService.getAllLocalizations(
-                  'log.manual.tags.name'
-                )
-              )
-              .setDescription('Tags for the activity')
-              .setDescriptionLocalizations(
-                this._localizationService.getAllLocalizations(
-                  'log.manual.tags.description'
-                )
-              )
-              .setRequired(false)
-          )
-      );
+    return getCommandBuilder(this._localizationService);
   }
-
-  private static KNOWN_HOST_TAGS = new Map<string, string>([
-    ['youtube.com', 'youtube'],
-    ['youtu.be', 'youtube'],
-  ]);
 
   private async _getDomainTags(url: URL): Promise<string[]> {
     const hostname = url.hostname;
@@ -773,7 +372,7 @@ export default class LogCommand implements ICommand {
     const charPerMinute =
       interaction.options.getNumber('reading-speed', false) ??
       (await this._userConfigService.getReadingSpeed(interaction.user.id)) ??
-      350;
+      LogCommand.BASE_READING_SPEED;
 
     const duration = charCount / charPerMinute;
 
@@ -835,6 +434,110 @@ export default class LogCommand implements ICommand {
     });
   }
 
+  private async _executeManga(interaction: ChatInputCommandInteraction) {
+    await interaction.deferReply();
+    // Note: should not have X-name format because there is no manga data
+    // using non-scoped data is fine for now
+    const nameOrSuggestion = interaction.options.getString('name', true);
+    const namePromise =
+      this._autocompleteService.resolveSuggestion(nameOrSuggestion);
+
+    const pages = interaction.options.getNumber('pages', true);
+    const duration = interaction.options.getNumber('duration', false);
+    const enteredDate = interaction.options.getString('date', false);
+
+    let pagesPerMinutePromise: Promise<number>;
+    let durationPromise: Promise<number>;
+
+    if (!duration) {
+      const charsPerMinutePromise = this._userConfigService
+        .getReadingSpeed(interaction.user.id)
+        .then(speed => speed ?? LogCommand.BASE_READING_SPEED);
+
+      pagesPerMinutePromise = charsPerMinutePromise.then(charsPerMinute => {
+        const charsPerPage = 125;
+        // Inferred from reading speed
+        return charsPerMinute / charsPerPage;
+      });
+
+      durationPromise = pagesPerMinutePromise.then(
+        pagesPerMinute => pages / pagesPerMinute
+      );
+    } else {
+      pagesPerMinutePromise = Promise.resolve(pages / duration);
+      durationPromise = Promise.resolve(duration);
+    }
+
+    const [name, pagesPerMinute, finalDuration] = await Promise.all([
+      namePromise,
+      pagesPerMinutePromise,
+      durationPromise,
+    ]);
+
+    const date = enteredDate
+      ? await parseTimeWithUserTimezone(
+          this._userConfigService,
+          this._guildConfigService,
+          enteredDate,
+          interaction.user.id,
+          interaction.guildId
+        )
+      : new Date();
+
+    if (!date) {
+      await interaction.editReply({
+        content: 'Invalid date',
+      });
+      return;
+    }
+
+    const tags = ['manga'];
+
+    const activity = await Activity.create({
+      name,
+      duration: finalDuration,
+      tags,
+      userId: interaction.user.id,
+      date,
+      type: 'reading',
+    });
+
+    const embed = new EmbedBuilder()
+      .setTitle('Activity logged!')
+      .setFields(
+        {
+          name: 'Manga',
+          value: name,
+        },
+        {
+          name: 'Pages',
+          value: pages.toString(),
+        },
+        {
+          name: 'Total Read Time',
+          value: activity.formattedDuration!,
+        },
+        {
+          name: `${duration ? '' : 'Inferred '}Pages Per Minute`,
+          value: pagesPerMinute.toString(),
+        }
+      )
+      .setFooter({text: `ID: ${activity.id}`})
+      .setTimestamp(activity.date)
+      .setColor(this._colors.success);
+
+    if (!duration) {
+      embed.setDescription(
+        'Duration was not provided, so it was inferred from your reading speed.' +
+          ' If you want to provide a duration, use the `duration` option.'
+      );
+    }
+
+    await interaction.editReply({
+      embeds: [embed],
+    });
+  }
+
   public async execute(interaction: ChatInputCommandInteraction) {
     if (interaction.options.getSubcommand() === 'video') {
       return this._executeVideo(interaction);
@@ -842,6 +545,8 @@ export default class LogCommand implements ICommand {
       return this._executeAnime(interaction);
     } else if (interaction.options.getSubcommand() === 'vn') {
       return this._executeVN(interaction);
+    } else if (interaction.options.getSubcommand() === 'manga') {
+      return this._executeManga(interaction);
     }
 
     if (interaction.options.getSubcommand() !== 'manual') {
@@ -904,8 +609,7 @@ export default class LogCommand implements ICommand {
     if (unit === 'episode') {
       convertedDuration *= 24;
     } else if (unit === 'character') {
-      // 350 characters per minute
-      convertedDuration = Math.round(duration / 350);
+      convertedDuration = Math.round(duration / LogCommand.BASE_READING_SPEED);
     } else if (unit === 'minute') {
       // Do nothing
     }
