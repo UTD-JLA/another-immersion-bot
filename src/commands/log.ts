@@ -4,7 +4,7 @@ import {
   EmbedBuilder,
 } from 'discord.js';
 import {ICommand} from '.';
-import {ActivityType} from '../models/activity';
+import {ActivityType, ActivityUnit, IActivity} from '../models/activity';
 import {
   IAutocompletionService,
   ILoggerService,
@@ -336,6 +336,8 @@ export default class LogCommand implements ICommand {
       userId: interaction.user.id,
       date,
       type: ActivityType.Listening,
+      rawDuration: episode,
+      rawDurationUnit: ActivityUnit.Episode,
     });
 
     const embed = new EmbedBuilder()
@@ -378,8 +380,12 @@ export default class LogCommand implements ICommand {
     );
 
     const charCount = interaction.options.getNumber('characters', true);
+    const manuallyEnteredReadingSpeed = interaction.options.getNumber(
+      'reading-speed',
+      false
+    );
     const charPerMinute =
-      interaction.options.getNumber('reading-speed', false) ??
+      manuallyEnteredReadingSpeed ??
       (await this._userConfigService.getReadingSpeed(interaction.user.id)) ??
       LogCommand.BASE_READING_SPEED;
 
@@ -405,14 +411,22 @@ export default class LogCommand implements ICommand {
 
     const tags = ['vn'];
 
-    const activity = await this._activityService.createActivity({
+    const newActivity: IActivity = {
       name,
       duration,
       tags,
       userId: interaction.user.id,
       date,
       type: ActivityType.Listening,
-    });
+      rawDuration: charCount,
+      rawDurationUnit: ActivityUnit.Character,
+    };
+
+    if (manuallyEnteredReadingSpeed) {
+      newActivity.speed = charPerMinute;
+    }
+
+    const activity = await this._activityService.createActivity(newActivity);
 
     const embed = new EmbedBuilder()
       .setTitle('Activity logged!')
@@ -502,14 +516,22 @@ export default class LogCommand implements ICommand {
 
     const tags = ['manga'];
 
-    const activity = await this._activityService.createActivity({
+    const newActivity: IActivity = {
       name,
       duration: finalDuration,
       tags,
       userId: interaction.user.id,
       date,
       type: ActivityType.Reading,
-    });
+      rawDuration: pages,
+      rawDurationUnit: ActivityUnit.Page,
+    };
+
+    if (duration) {
+      newActivity.speed = pagesPerMinute;
+    }
+
+    const activity = await this._activityService.createActivity(newActivity);
 
     const embed = new EmbedBuilder()
       .setTitle('Activity logged!')
