@@ -1,5 +1,5 @@
 import {ICommand} from '.';
-import {Activity, IActivity} from '../models/activity';
+import {IActivity} from '../models/activity';
 import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
@@ -8,16 +8,21 @@ import {
   ButtonStyle,
   EmbedBuilder,
 } from 'discord.js';
-import {Document} from 'mongoose';
 import {injectable, inject} from 'inversify';
 import {IConfig, IColorConfig} from '../config';
+import {IActivityService} from '../services/interfaces';
 
 @injectable()
 export default class UndoCommand implements ICommand {
   private readonly _colors: IColorConfig;
+  private readonly _activityService: IActivityService;
 
-  constructor(@inject('Config') private readonly config: IConfig) {
+  constructor(
+    @inject('Config') config: IConfig,
+    @inject('ActivityService') activityService: IActivityService
+  ) {
     this._colors = config.colors;
+    this._activityService = activityService;
   }
 
   public readonly data = <SlashCommandBuilder>new SlashCommandBuilder()
@@ -33,10 +38,12 @@ export default class UndoCommand implements ICommand {
   public async execute(interaction: ChatInputCommandInteraction) {
     const activityId = interaction.options.getString('id');
 
-    let activity: IActivity & Document;
+    let activity: IActivity;
 
     if (activityId) {
-      const foundActivity = await Activity.findById(activityId);
+      const foundActivity = await this._activityService.getActivityById(
+        activityId
+      );
       if (!foundActivity) {
         await interaction.reply('Activity not found');
         return;
@@ -47,10 +54,9 @@ export default class UndoCommand implements ICommand {
 
       activity = foundActivity;
     } else {
-      const foundActivity = await Activity.findOne(
-        {userId: interaction.user.id},
-        {},
-        {sort: {date: -1}}
+      const foundActivity = await this._activityService.getActivities(
+        interaction.user.id,
+        1
       );
 
       if (!foundActivity) {
@@ -58,7 +64,7 @@ export default class UndoCommand implements ICommand {
         return;
       }
 
-      activity = foundActivity;
+      activity = foundActivity[0];
     }
 
     const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
@@ -91,7 +97,9 @@ export default class UndoCommand implements ICommand {
       });
 
       if (confirmation.customId === 'undo') {
-        await activity.deleteOne();
+        await this._activityService.deleteActivityById(
+          activity._id!.toString()
+        );
         await interaction.editReply({
           embeds: [
             embed

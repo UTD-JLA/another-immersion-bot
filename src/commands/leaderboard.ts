@@ -3,19 +3,19 @@ import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,
   EmbedBuilder,
-  GuildMember,
 } from 'discord.js';
-import {Activity} from '../models/activity';
 import {inject, injectable} from 'inversify';
-import {IConfig, IColorConfig} from '../config';
+import {IConfig} from '../config';
+import {IActivityService} from '../services/interfaces';
+import {ActivityType} from '../models/activity';
 
 @injectable()
 export default class LeaderboardCommand implements ICommand {
-  private readonly _colors: IColorConfig;
-
-  constructor(@inject('Config') private readonly config: IConfig) {
-    this._colors = config.colors;
-  }
+  constructor(
+    @inject('Config') private readonly _config: IConfig,
+    @inject('ActivityService')
+    private readonly _activityService: IActivityService
+  ) {}
 
   public readonly data = <SlashCommandBuilder>new SlashCommandBuilder()
     .setName('leaderboard')
@@ -64,6 +64,15 @@ export default class LeaderboardCommand implements ICommand {
 
   public async execute(interaction: ChatInputCommandInteraction) {
     const type = interaction.options.getString('type');
+
+    if (type && !Object.values(ActivityType).includes(type as ActivityType)) {
+      await interaction.reply({
+        content: 'Invalid type',
+        ephemeral: true,
+      });
+      return;
+    }
+
     const timeframe = interaction.options.getString('timeframe');
     if (!interaction.guild) {
       await interaction.reply({
@@ -79,45 +88,11 @@ export default class LeaderboardCommand implements ICommand {
       .guild!.members.fetch()
       .then(members => members.map(m => m.id));
 
-    const typeMatch = type ? {type} : {};
-    const timeframeMatch = timeframe
-      ? {date: {$gte: getStartOfTimeframe(timeframe)}}
-      : {};
-
-    const topMembers = <
-      {_id: string; member?: GuildMember; duration: number}[]
-    >await Activity.aggregate([
-      {
-        $match: {
-          userId: {
-            $in: guildMemberIds,
-          },
-          ...typeMatch,
-          ...timeframeMatch,
-        },
-      },
-      {
-        $group: {
-          _id: '$userId',
-          duration: {
-            $sum: '$duration',
-          },
-        },
-      },
-      {
-        $sort: {
-          duration: -1,
-        },
-      },
-      {
-        $limit: 10,
-      },
-    ]).then(docs =>
-      docs.map(doc => ({
-        _id: doc._id,
-        member: interaction.guild!.members.cache.get(doc._id),
-        duration: doc.duration,
-      }))
+    const topMembers = await this._activityService.getTopMembers(
+      guildMemberIds,
+      10,
+      timeframe ? getStartOfTimeframe(timeframe) : undefined,
+      type as ActivityType | undefined
     );
 
     if (topMembers.length === 0) {
@@ -135,13 +110,14 @@ export default class LeaderboardCommand implements ICommand {
     embed.setFields(
       topMembers.map((memberWithStats, index) => ({
         name: `${index + 1}. ${
-          memberWithStats.member?.displayName ?? memberWithStats._id
+          interaction.guild?.members.cache.get(memberWithStats.discordId)
+            ?.displayName ?? memberWithStats.discordId
         }`,
         value: minutesAsTimeString(memberWithStats.duration),
       }))
     );
     embed.setTimestamp(new Date());
-    embed.setColor(this._colors.primary);
+    embed.setColor(this._config.colors.primary);
     await interaction.editReply({embeds: [embed]});
   }
 }

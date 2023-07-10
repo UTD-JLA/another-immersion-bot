@@ -4,12 +4,18 @@ import {
   ChatInputCommandInteraction,
   AttachmentBuilder,
 } from 'discord.js';
-import {injectable} from 'inversify';
-import {Activity, IActivity} from '../models/activity';
+import {inject, injectable} from 'inversify';
+import {IActivity} from '../models/activity';
+import {IActivityService} from '../services/interfaces';
 import {stringify} from 'csv-string';
 
 @injectable()
 export default class ExportCommand implements ICommand {
+  constructor(
+    @inject('ActivityService')
+    private readonly activityService: IActivityService
+  ) {}
+
   public readonly data = <SlashCommandBuilder>new SlashCommandBuilder()
     .setName('export')
     .setDescription('Export command')
@@ -33,7 +39,19 @@ export default class ExportCommand implements ICommand {
   private static _getLine(format: 'json' | 'csv', activity: IActivity): string {
     switch (format) {
       case 'json':
-        return JSON.stringify(activity) + '\n';
+        return (
+          JSON.stringify({
+            date: activity.date.toISOString(),
+            type: activity.type,
+            duration: activity.duration,
+            name: activity.name,
+            url: activity.url,
+            tags: activity.tags,
+            rawDuration: activity.rawDuration,
+            rawDurationUnit: activity.rawDurationUnit,
+            speed: activity.speed,
+          }) + '\n'
+        );
       case 'csv':
         return stringify([
           activity.date.toISOString(),
@@ -53,12 +71,11 @@ export default class ExportCommand implements ICommand {
       | 'json'
       | 'csv';
 
-    const activities = await Activity.find({
-      userId: interaction.user.id,
-    }).select('-_id -userId -__v');
+    const activities = await this.activityService.getActivities(
+      interaction.user.id
+    );
 
     const fileContent = activities
-      .map(activity => activity.toObject())
       .map(ExportCommand._getLine.bind(null, format))
       .join('');
     const fileBuffer = Buffer.from(fileContent, 'utf8');

@@ -5,6 +5,20 @@ export enum ActivityType {
   Reading = 'reading',
 }
 
+export enum ActivitySubtype {
+  Video = 'video',
+  VN = 'vn',
+  Anime = 'anime',
+  Manga = 'manga',
+  Book = 'book',
+}
+
+export enum ActivityUnit {
+  Page = 'page',
+  Character = 'character',
+  Episode = 'episode',
+}
+
 export interface IActivity {
   _id?: ObjectId;
   userId: string;
@@ -14,8 +28,11 @@ export interface IActivity {
   date: Date;
   duration: number;
   tags?: string[];
-
+  rawDuration?: number;
+  rawDurationUnit?: ActivityUnit;
+  speed?: number;
   // Virtuals
+  subtype?: ActivitySubtype;
   roundedDuration?: number;
   formattedDuration?: string;
 }
@@ -28,11 +45,14 @@ const schema = new Schema<IActivity>({
   date: {type: Date, required: true},
   duration: {type: Number, required: true, min: 0},
   tags: {type: [String], default: []},
+  rawDuration: {type: Number, min: 0},
+  rawDurationUnit: {type: String, enum: Object.values(ActivityUnit)},
+  speed: {type: Number, min: 0},
 });
 
 schema.pre('save', function (this, next) {
   if (this.isModified('tags') && this.tags) {
-    this.tags = this.tags.map(tag => tag.toLowerCase().trim());
+    this.tags = this.tags.map(tag => tag.trim());
     this.tags = [...new Set(this.tags)];
   }
 
@@ -58,5 +78,38 @@ schema.virtual('formattedDuration').get(function (this) {
 
   return `${days}d ${hours}h ${minutes}m`;
 });
+
+schema
+  .virtual('subtype')
+  .get(function (this) {
+    if (!this.tags) {
+      return null;
+    }
+
+    for (const tag of this.tags) {
+      for (const subtype of Object.values(ActivitySubtype)) {
+        if (tag === subtype) {
+          return subtype;
+        }
+      }
+    }
+
+    return null;
+  })
+  .set(function (this, subtype) {
+    if (!this.tags) {
+      this.tags = [];
+    }
+
+    // Remove all subtypes from tags
+    this.tags = this.tags.filter(
+      tag => !(Object.values(ActivitySubtype) as string[]).includes(tag)
+    );
+
+    // Add new subtype to tags
+    if (subtype) {
+      this.tags.push(subtype);
+    }
+  });
 
 export const Activity = model<IActivity>('Activity', schema);

@@ -4,7 +4,7 @@ import {
   EmbedBuilder,
 } from 'discord.js';
 import {ICommand} from '.';
-import {Activity} from '../models/activity';
+import {ActivityType} from '../models/activity';
 import {
   IAutocompletionService,
   ILoggerService,
@@ -19,6 +19,7 @@ import {cpus} from 'os';
 import {IColorConfig, IConfig} from '../config';
 import {getUserTimezone, parseTimeWithUserTimezone} from '../util/time';
 import {getCommandBuilder} from './log.data';
+import {IActivityService} from '../services/interfaces';
 
 interface VideoURLExtractedInfo {
   title: string;
@@ -40,6 +41,7 @@ export default class LogCommand implements ICommand {
   private readonly _colors: IColorConfig;
   private readonly _guildConfigService: IGuildConfigService;
   private readonly _userConfigService: IUserConfigService;
+  private readonly _activityService: IActivityService;
 
   // TODO: make configurable
   private readonly _subprocessLock = new LimitedResourceLock(
@@ -56,10 +58,16 @@ export default class LogCommand implements ICommand {
   constructor(
     @inject('AutocompletionService')
     autocompleteService: IAutocompletionService,
-    @inject('LoggerService') loggerService: ILoggerService,
-    @inject('LocalizationService') localizationService: ILocalizationService,
-    @inject('GuildConfigService') guildConfigService: IGuildConfigService,
-    @inject('UserConfigService') userConfigService: IUserConfigService,
+    @inject('ActivityService')
+    activityService: IActivityService,
+    @inject('LoggerService')
+    loggerService: ILoggerService,
+    @inject('LocalizationService')
+    localizationService: ILocalizationService,
+    @inject('GuildConfigService')
+    guildConfigService: IGuildConfigService,
+    @inject('UserConfigService')
+    userConfigService: IUserConfigService,
     @inject('Config') config: IConfig
   ) {
     this._autocompleteService = autocompleteService;
@@ -68,6 +76,7 @@ export default class LogCommand implements ICommand {
     this._colors = config.colors;
     this._guildConfigService = guildConfigService;
     this._userConfigService = userConfigService;
+    this._activityService = activityService;
   }
 
   // TODO: anime, vn, etc. shortcuts
@@ -239,7 +248,7 @@ export default class LogCommand implements ICommand {
       ? 'from url'
       : 'from video length';
 
-    const activity = await Activity.create({
+    const activity = await this._activityService.createActivity({
       name: vidInfo.title,
       url: urlComponents.toString(),
       duration,
@@ -251,7 +260,7 @@ export default class LogCommand implements ICommand {
       ],
       userId: interaction.user.id,
       date,
-      type: 'listening',
+      type: ActivityType.Listening,
     });
 
     const embed = new EmbedBuilder()
@@ -274,7 +283,7 @@ export default class LogCommand implements ICommand {
           value: activity.tags?.join('\n') ?? 'None',
         }
       )
-      .setFooter({text: `ID: ${activity.id}`})
+      .setFooter({text: `ID: ${activity._id}`})
       .setImage(vidInfo.thumbnail)
       .setTimestamp(activity.date)
       .setColor(this._colors.success);
@@ -320,13 +329,13 @@ export default class LogCommand implements ICommand {
     const duration = episode * episodeLength;
     const tags = ['anime'];
 
-    const activity = await Activity.create({
+    const activity = await this._activityService.createActivity({
       name,
       duration,
       tags,
       userId: interaction.user.id,
       date,
-      type: 'listening',
+      type: ActivityType.Listening,
     });
 
     const embed = new EmbedBuilder()
@@ -349,7 +358,7 @@ export default class LogCommand implements ICommand {
           value: activity.formattedDuration!,
         }
       )
-      .setFooter({text: `ID: ${activity.id}`})
+      .setFooter({text: `ID: ${activity._id}`})
       .setTimestamp(activity.date)
       .setColor(this._colors.success);
 
@@ -396,13 +405,13 @@ export default class LogCommand implements ICommand {
 
     const tags = ['vn'];
 
-    const activity = await Activity.create({
+    const activity = await this._activityService.createActivity({
       name,
       duration,
       tags,
       userId: interaction.user.id,
       date,
-      type: 'reading',
+      type: ActivityType.Listening,
     });
 
     const embed = new EmbedBuilder()
@@ -425,7 +434,7 @@ export default class LogCommand implements ICommand {
           value: activity.formattedDuration!,
         }
       )
-      .setFooter({text: `ID: ${activity.id}`})
+      .setFooter({text: `ID: ${activity._id}`})
       .setTimestamp(activity.date)
       .setColor(this._colors.success);
 
@@ -493,13 +502,13 @@ export default class LogCommand implements ICommand {
 
     const tags = ['manga'];
 
-    const activity = await Activity.create({
+    const activity = await this._activityService.createActivity({
       name,
       duration: finalDuration,
       tags,
       userId: interaction.user.id,
       date,
-      type: 'reading',
+      type: ActivityType.Reading,
     });
 
     const embed = new EmbedBuilder()
@@ -522,7 +531,7 @@ export default class LogCommand implements ICommand {
           value: pagesPerMinute.toString(),
         }
       )
-      .setFooter({text: `ID: ${activity.id}`})
+      .setFooter({text: `ID: ${activity._id}`})
       .setTimestamp(activity.date)
       .setColor(this._colors.success);
 
@@ -614,19 +623,19 @@ export default class LogCommand implements ICommand {
       // Do nothing
     }
 
-    const activity = await Activity.create({
+    const activity = await this._activityService.createActivity({
       userId: interaction.user.id,
-      type,
+      type: type as ActivityType,
       duration: convertedDuration,
       name,
-      url,
+      url: url ?? undefined,
       date,
       tags,
     });
 
     const embed = new EmbedBuilder()
       .setTitle('Activity logged!')
-      .setFooter({text: `ID: ${activity.id}`})
+      .setFooter({text: `ID: ${activity._id}`})
       .setTimestamp(activity.date)
       .setColor(this._colors.success);
 

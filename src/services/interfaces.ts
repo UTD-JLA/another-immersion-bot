@@ -3,6 +3,7 @@ import {Stringifiable} from '../util/types';
 import {Locale} from 'discord.js';
 import {IGuildConfig} from '../models/guildConfig';
 import {IUserConfig} from '../models/userConfig';
+import {IActivity, ActivityType} from '../models/activity';
 
 export interface ISuggestion {
   name: string;
@@ -87,4 +88,37 @@ export interface IUserConfigService {
   setReadingSpeed(userId: string, readingSpeed: number): Promise<void>;
   getDailyGoal(userId: string): Promise<number | undefined>;
   setDailyGoal(userId: string, dailyGoal: number): Promise<void>;
+}
+
+export interface IActivityService {
+  createActivity(activity: Omit<IActivity, '_id'>): Promise<IActivity>;
+  deleteActivityById(activityId: string): Promise<void>;
+  getActivityById(activityId: string): Promise<IActivity | null>;
+  getActivities(userId: string, limit?: number): Promise<IActivity[]>;
+  getTopMembers(
+    memberIds: string[],
+    limit: number,
+    since?: Date,
+    type?: ActivityType
+  ): Promise<{discordId: string; duration: number}[]>;
+  getActivitiesInDateRange(
+    userId: string,
+    startDate: Date,
+    endDate: Date
+  ): Promise<IActivity[]>;
+  getSpeedsInDateRange(
+    userId: string,
+    startDate: Date,
+    endDate: Date
+  ): Promise<Array<[Date, number]>>;
+  getAverageSpeedInDateRange(
+    userId: string,
+    startDate: Date,
+    endDate: Date
+  ): Promise<number>;
+  getDailyDurationsInDateRange(
+    userId: string,
+    startDate: Date,
+    endDate: Date
+  ): Promise<Array<[`${number}-${number}-${number}`, number]>>;
 }

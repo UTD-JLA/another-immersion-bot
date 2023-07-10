@@ -1,6 +1,6 @@
 import {ICommand} from '.';
 import {IColorConfig, IConfig} from '../config';
-import {Activity, IActivity} from '../models/activity';
+import {IActivity} from '../models/activity';
 import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
@@ -12,21 +12,25 @@ import {
 import {inject, injectable} from 'inversify';
 import {IGuildConfigService, IUserConfigService} from '../services';
 import {getUserTimezone} from '../util/time';
+import {IActivityService} from '../services/interfaces';
 
 @injectable()
 export default class HistoryCommand implements ICommand {
   private readonly _colors: IColorConfig;
   private readonly _userConfigService: IUserConfigService;
   private readonly _guildConfigService: IGuildConfigService;
+  private readonly _activityService: IActivityService;
 
   constructor(
-    @inject('Config') private readonly config: IConfig,
+    @inject('Config') config: IConfig,
     @inject('UserConfigService') userConfigService: IUserConfigService,
-    @inject('GuildConfigService') guildConfigService: IGuildConfigService
+    @inject('GuildConfigService') guildConfigService: IGuildConfigService,
+    @inject('ActivityService') activityService: IActivityService
   ) {
     this._colors = config.colors;
     this._userConfigService = userConfigService;
     this._guildConfigService = guildConfigService;
+    this._activityService = activityService;
   }
 
   public readonly data = <SlashCommandBuilder>new SlashCommandBuilder()
@@ -59,7 +63,7 @@ export default class HistoryCommand implements ICommand {
 
     // TODO: Do not fetch all activities at once
     const [activities, timezone] = await Promise.all([
-      Activity.find({userId}).sort({date: -1}),
+      this._activityService.getActivities(userId),
       getUserTimezone(
         this._userConfigService,
         this._guildConfigService,

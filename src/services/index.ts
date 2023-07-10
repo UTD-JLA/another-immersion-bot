@@ -7,14 +7,16 @@ import {
   ILocalizationService,
   IGuildConfigService,
   IUserConfigService,
+  IActivityService,
 } from '../services/interfaces';
-import AutocompletionService from '../services/impl/autocomplete';
-import MaterialSourceService from '../services/impl/materialSource';
-import LoggerService from '../services/impl/logger';
-import ChartService from '../services/impl/chart';
-import LocalizationService from '../services/impl/localization';
-import GuildConfigService from '../services/impl/guildConfig';
-import UserConfigService from '../services/impl/userConfig';
+import AutocompletionService from './impl/autocomplete';
+import MaterialSourceService from './impl/materialSource';
+import LoggerService from './impl/logger';
+import ChartService from './impl/chart';
+import LocalizationService from './impl/localization';
+import GuildConfigService from './impl/guildConfig';
+import UserConfigService from './impl/userConfig';
+import ActivityService from './impl/activity';
 
 export function registerServices(container: Container) {
   container
@@ -48,6 +50,8 @@ export function registerServices(container: Container) {
     .to(GuildConfigService);
 
   container.bind<IUserConfigService>('UserConfigService').to(UserConfigService);
+
+  container.bind<IActivityService>('ActivityService').to(ActivityService);
 }
 
 export {

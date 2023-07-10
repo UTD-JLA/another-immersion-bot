@@ -6,11 +6,11 @@ import {
 } from 'discord.js';
 import {injectable, inject} from 'inversify';
 import {IChartService} from '../services';
-import {Activity} from '../models/activity';
 import {AttachmentBuilder} from 'discord.js';
 import {IConfig, IColorConfig} from '../config';
 import {IUserConfigService, IGuildConfigService} from '../services';
 import {parseTimeWithUserTimezone, calculateDeltaInDays} from '../util/time';
+import {IActivityService} from '../services/interfaces';
 
 @injectable()
 export default class ChartCommand implements ICommand {
@@ -18,17 +18,20 @@ export default class ChartCommand implements ICommand {
   private readonly _colors: IColorConfig;
   private readonly _userService: IUserConfigService;
   private readonly _guildService: IGuildConfigService;
+  private readonly _activityService: IActivityService;
 
   constructor(
     @inject('ChartService') chartService: IChartService,
     @inject('Config') config: IConfig,
     @inject('UserConfigService') userService: IUserConfigService,
-    @inject('GuildConfigService') guildService: IGuildConfigService
+    @inject('GuildConfigService') guildService: IGuildConfigService,
+    @inject('ActivityService') activityService: IActivityService
   ) {
     this._chartService = chartService;
     this._colors = config.colors;
     this._userService = userService;
     this._guildService = guildService;
+    this._activityService = activityService;
   }
 
   public readonly data = <SlashCommandBuilder>new SlashCommandBuilder()
@@ -161,36 +164,14 @@ export default class ChartCommand implements ICommand {
       nBuckets = Math.max(Math.min(nBuckets, maxBuckets), 1);
     }
 
-    // Get activities from the last week and group by day
-    const activitiesPromise = await Activity.aggregate([
-      {
-        $match: {
-          userId: interaction.user.id,
-          date: {
-            $gte: beginningDate,
-            $lte: endDate,
-          },
-        },
-      },
-      {
-        $group: {
-          _id: {
-            $dateToString: {
-              format: '%Y-%m-%d',
-              date: '$date',
-            },
-          },
-          count: {
-            $sum: '$duration',
-          },
-        },
-      },
-      {
-        $sort: {
-          _id: 1,
-        },
-      },
-    ]);
+    const activitiesPromise = this._activityService
+      .getDailyDurationsInDateRange(interaction.user.id, beginningDate, endDate)
+      .then(a =>
+        a.map(([dateString, minutes]) => ({
+          _id: dateString as string,
+          count: minutes,
+        }))
+      );
 
     const beginningString = beginningDate.toISOString().slice(0, 10);
     const endString = endDate.toISOString().slice(0, 10);
