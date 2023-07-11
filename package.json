@@ -1,6 +1,6 @@
 {
   "name": "another-immersion-bot",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "",
   "main": "build/index.js",
   "scripts": {
@@ -18,7 +18,7 @@
     "package": "pkg bundle/index.js -o dist/another-immersion-bot -c pkg.config.json"
   },
   "author": "",
-  "license": "ISC",
+  "license": "GPL-3.0",
   "devDependencies": {
     "@types/command-exists": "^1.2.0",
     "@types/mongoose": "^5.11.97",
