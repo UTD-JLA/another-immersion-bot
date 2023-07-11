@@ -3,7 +3,7 @@ import {Stringifiable} from '../util/types';
 import {Locale} from 'discord.js';
 import {IGuildConfig} from '../models/guildConfig';
 import {IUserConfig} from '../models/userConfig';
-import {IActivity, ActivityType} from '../models/activity';
+import {IActivity, ActivityType, ActivityUnit} from '../models/activity';
 
 export interface ISuggestion {
   name: string;
@@ -111,16 +111,23 @@ export interface IActivityService {
   getSpeedsInDateRange(
     userId: string,
     startDate: Date,
-    endDate: Date
+    endDate: Date,
+    type?: ActivityUnit
   ): Promise<Array<[Date, number]>>;
-  getAverageSpeedInDateRange(
-    userId: string,
-    startDate: Date,
-    endDate: Date
-  ): Promise<number>;
   getDailyDurationsInDateRange(
     userId: string,
     startDate: Date,
     endDate: Date
   ): Promise<Array<[`${number}-${number}-${number}`, number]>>;
+  on(event: 'activityCreated', listener: (activity: IActivity) => void): void;
+}
+
+export interface IUserSpeedService {
+  predictSpeed(userId: string, type: ActivityUnit): Promise<number>;
+  convertUnit(
+    userId: string,
+    from: ActivityUnit,
+    to: ActivityUnit,
+    value: number
+  ): Promise<number>;
 }

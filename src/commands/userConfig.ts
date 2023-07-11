@@ -6,9 +6,14 @@ import {
   EmbedBuilder,
 } from 'discord.js';
 import {injectable, inject} from 'inversify';
-import {IUserConfigService, IGuildConfigService} from '../services';
+import {
+  IUserConfigService,
+  IGuildConfigService,
+  IUserSpeedService,
+} from '../services';
 import {IConfig} from '../config';
 import {validateTimezone} from '../util/validation';
+import {ActivityUnit} from '../models/activity';
 
 @injectable()
 export default class UserConfigCommand implements ICommand {
@@ -18,7 +23,9 @@ export default class UserConfigCommand implements ICommand {
     @inject('GuildConfigService')
     private readonly _guildConfigService: IGuildConfigService,
     @inject('Config')
-    private readonly _config: IConfig
+    private readonly _config: IConfig,
+    @inject('UserSpeedService')
+    private readonly _userSpeedService: IUserSpeedService
   ) {}
 
   public readonly data = <SlashCommandBuilder>new SlashCommandBuilder()
@@ -72,6 +79,7 @@ export default class UserConfigCommand implements ICommand {
                 .setDescription('Your reading speed')
                 .setRequired(true)
                 .setMinValue(0)
+                .setAutocomplete(true)
             )
         )
         .addSubcommand(subcommand =>
@@ -236,10 +244,24 @@ export default class UserConfigCommand implements ICommand {
         interaction.user.id
       );
 
-      embed.addFields({
-        name: 'Reading Speed',
-        value: readingSpeed?.toString() ?? 'Not set',
-      });
+      const [predictedCharSpeed, predictedPageSpeed] = await Promise.all(
+        [ActivityUnit.Character, ActivityUnit.Page].map(unit =>
+          this._userSpeedService.predictSpeed(interaction.user.id, unit)
+        )
+      );
+
+      embed.addFields(
+        {
+          name: 'Reading Speed',
+          value: readingSpeed?.toString() ?? 'Not set',
+        },
+        {
+          name: 'Predicted Speed',
+          value: `Character: ${predictedCharSpeed.toPrecision(
+            3
+          )} cpm\nPage (Manga): ${predictedPageSpeed.toPrecision(3)} ppm`,
+        }
+      );
     } else if (subcommand === 'daily-goal') {
       const dailyGoal = await this._userConfigService.getDailyGoal(
         interaction.user.id
@@ -254,5 +276,35 @@ export default class UserConfigCommand implements ICommand {
     await interaction.reply({embeds: [embed]});
   }
 
-  public autocomplete?: (interaction: AutocompleteInteraction) => Promise<void>;
+  public async autocomplete(
+    interaction: AutocompleteInteraction
+  ): Promise<void> {
+    const group = interaction.options.getSubcommandGroup(false);
+
+    if (!group || group !== 'set') {
+      throw new Error('Invalid autocomplete');
+    }
+
+    const subcommand = interaction.options.getSubcommand(true);
+
+    if (subcommand !== 'reading-speed') {
+      throw new Error('Invalid autocomplete');
+    }
+
+    const predictedSpeed = await this._userSpeedService.predictSpeed(
+      interaction.user.id,
+      ActivityUnit.Character
+    );
+
+    if (!predictedSpeed) {
+      return interaction.respond([]);
+    }
+
+    interaction.respond([
+      {
+        name: `Predicted value: ${predictedSpeed.toPrecision(3)} } cpm`,
+        value: predictedSpeed,
+      },
+    ]);
+  }
 }
