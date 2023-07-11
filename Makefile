@@ -1,4 +1,5 @@
 VERSION := $(shell cat package.json | jq -r '.version')
+VENV_DIR := venv
 
 all: zip
 
@@ -13,11 +14,10 @@ bot: src/**/*.ts src/*.ts
 	npm run package
 
 py-server: py-server/main.py
-	python3 -m venv venv
-	. ./venv/bin/activate
-	pip install -r ./py-server/requirements.txt
-	pip install pyinstaller
-	pyinstaller ./py-server/main.py -n py-server -F --hidden-import='PIL._tkinter_finder'
+	python3 -m venv $(VENV_DIR)
+	$(VENV_DIR)/bin/pip install -r ./py-server/requirements.txt
+	$(VENV_DIR)/bin/pip install pyinstaller
+	$(VENV_DIR)/bin/pyinstaller ./py-server/main.py -n py-server -F --hidden-import='PIL._tkinter_finder'
 
 zip: bot py-server
 	cp LICENSE ./dist
