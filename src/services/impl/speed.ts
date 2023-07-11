@@ -132,7 +132,7 @@ export default class UserSpeedService implements IUserSpeedService {
       return 0;
     }
 
-    const f = this._createSpeedUnitConversion(fromSpeeds, toSpeeds);
+    const f = this._createSpeedUnitConversion(toSpeeds, fromSpeeds);
     this._convertCache.set(cacheKey, f);
     return f(value);
   }
