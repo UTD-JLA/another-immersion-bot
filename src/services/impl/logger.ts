@@ -33,6 +33,10 @@ export default class LoggerService implements ILoggerService {
     return new LoggerService(this._config, meta);
   }
 
+  public debug(message: string, meta?: any): void {
+    this._logger.debug(message, meta);
+  }
+
   public log(message: string, meta?: any): void {
     this._logger.info(message, meta);
   }

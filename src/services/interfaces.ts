@@ -56,6 +56,8 @@ export interface ILoggerService {
   warn(message: string, meta?: any): void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   child(meta: any): ILoggerService;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  debug(message: string, meta?: any): void;
 }
 
 export interface ILocalizationService {
