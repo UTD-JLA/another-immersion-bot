@@ -19,7 +19,7 @@ import {cpus} from 'os';
 import {IColorConfig, IConfig} from '../config';
 import {getUserTimezone, parseTimeWithUserTimezone} from '../util/time';
 import {getCommandBuilder} from './log.data';
-import {IActivityService} from '../services/interfaces';
+import {IActivityService, IUserSpeedService} from '../services/interfaces';
 
 interface VideoURLExtractedInfo {
   title: string;
@@ -42,6 +42,7 @@ export default class LogCommand implements ICommand {
   private readonly _guildConfigService: IGuildConfigService;
   private readonly _userConfigService: IUserConfigService;
   private readonly _activityService: IActivityService;
+  private readonly _userSpeedService: IUserSpeedService;
 
   // TODO: make configurable
   private readonly _subprocessLock = new LimitedResourceLock(
@@ -54,6 +55,8 @@ export default class LogCommand implements ICommand {
   ]);
 
   private static readonly BASE_READING_SPEED = 200; // words per minute
+
+  private static readonly BASE_CHARS_PER_PAGE = 120; // characters per page (manga)
 
   constructor(
     @inject('AutocompletionService')
@@ -68,7 +71,8 @@ export default class LogCommand implements ICommand {
     guildConfigService: IGuildConfigService,
     @inject('UserConfigService')
     userConfigService: IUserConfigService,
-    @inject('Config') config: IConfig
+    @inject('Config') config: IConfig,
+    @inject('UserSpeedService') userSpeedService: IUserSpeedService
   ) {
     this._autocompleteService = autocompleteService;
     this._loggerService = loggerService;
@@ -77,6 +81,7 @@ export default class LogCommand implements ICommand {
     this._guildConfigService = guildConfigService;
     this._userConfigService = userConfigService;
     this._activityService = activityService;
+    this._userSpeedService = userSpeedService;
   }
 
   // TODO: anime, vn, etc. shortcuts
@@ -469,33 +474,63 @@ export default class LogCommand implements ICommand {
     const duration = interaction.options.getNumber('duration', false);
     const enteredDate = interaction.options.getString('date', false);
 
-    let pagesPerMinutePromise: Promise<number>;
-    let durationPromise: Promise<number>;
+    let pagesPerMinute: number;
+    let finalDuration: number;
+    let durationSource: string | undefined;
+    let charStats:
+      | {
+          value: number;
+          atSpeed: number;
+        }
+      | undefined;
 
-    if (!duration) {
-      const charsPerMinutePromise = this._userConfigService
-        .getReadingSpeed(interaction.user.id)
-        .then(speed => speed ?? LogCommand.BASE_READING_SPEED);
-
-      pagesPerMinutePromise = charsPerMinutePromise.then(charsPerMinute => {
-        const charsPerPage = 125;
-        // Inferred from reading speed
-        return charsPerMinute / charsPerPage;
-      });
-
-      durationPromise = pagesPerMinutePromise.then(
-        pagesPerMinute => pages / pagesPerMinute
-      );
+    if (duration) {
+      pagesPerMinute = pages / duration;
+      finalDuration = duration;
     } else {
-      pagesPerMinutePromise = Promise.resolve(pages / duration);
-      durationPromise = Promise.resolve(duration);
+      const pageReadingSpeed =
+        await this._userConfigService.getPageReadingSpeed(interaction.user.id);
+
+      if (pageReadingSpeed) {
+        pagesPerMinute = pageReadingSpeed;
+        finalDuration = pages / pagesPerMinute;
+        durationSource = 'your configured page speed';
+
+        const estimatedChars = await this._userSpeedService.convertUnit(
+          interaction.user.id,
+          ActivityUnit.Page,
+          ActivityUnit.Character,
+          pages
+        );
+
+        if (estimatedChars > 0) {
+          const charsPerMinute = await this._userSpeedService.predictSpeed(
+            interaction.user.id,
+            ActivityUnit.Character
+          );
+
+          charStats = {
+            value: estimatedChars,
+            atSpeed: charsPerMinute,
+          };
+        }
+      } else {
+        const charsPerMinute = await this._userConfigService.getReadingSpeed(
+          interaction.user.id
+        );
+
+        pagesPerMinute =
+          (charsPerMinute ?? LogCommand.BASE_READING_SPEED) /
+          LogCommand.BASE_CHARS_PER_PAGE;
+
+        finalDuration = pages / pagesPerMinute;
+        durationSource = charsPerMinute
+          ? `your configured reading speed (assuming ${LogCommand.BASE_CHARS_PER_PAGE} chars/page)`
+          : 'the default page speed';
+      }
     }
 
-    const [name, pagesPerMinute, finalDuration] = await Promise.all([
-      namePromise,
-      pagesPerMinutePromise,
-      durationPromise,
-    ]);
+    const name = await namePromise;
 
     const date = enteredDate
       ? await parseTimeWithUserTimezone(
@@ -550,17 +585,28 @@ export default class LogCommand implements ICommand {
         },
         {
           name: `${duration ? '' : 'Inferred '}Pages Per Minute`,
-          value: pagesPerMinute.toString(),
+          value: pagesPerMinute.toPrecision(3).toString(),
         }
       )
       .setFooter({text: `ID: ${activity._id}`})
       .setTimestamp(activity.date)
       .setColor(this._colors.success);
 
-    if (!duration) {
+    if (charStats) {
+      embed.addFields({
+        name: 'Estimated Characters',
+        value: `${Math.round(charStats.value)} (${Math.round(
+          charStats.atSpeed
+        )} ecpm)`,
+      });
+    }
+
+    if (durationSource) {
       embed.setDescription(
-        'Duration was not provided, so it was inferred from your reading speed.' +
-          ' If you want to provide a duration, use the `duration` option.'
+        'Duration was not provided, so it was inferred from ' +
+          durationSource +
+          '. ' +
+          'If you want to provide a duration, use the `duration` option.'
       );
     }
 

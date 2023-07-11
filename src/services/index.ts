@@ -8,6 +8,7 @@ import {
   IGuildConfigService,
   IUserConfigService,
   IActivityService,
+  IUserSpeedService,
 } from '../services/interfaces';
 import AutocompletionService from './impl/autocomplete';
 import MaterialSourceService from './impl/materialSource';
@@ -17,6 +18,7 @@ import LocalizationService from './impl/localization';
 import GuildConfigService from './impl/guildConfig';
 import UserConfigService from './impl/userConfig';
 import ActivityService from './impl/activity';
+import UserSpeedService from './impl/speed';
 
 export function registerServices(container: Container) {
   container
@@ -52,6 +54,8 @@ export function registerServices(container: Container) {
   container.bind<IUserConfigService>('UserConfigService').to(UserConfigService);
 
   container.bind<IActivityService>('ActivityService').to(ActivityService);
+
+  container.bind<IUserSpeedService>('UserSpeedService').to(UserSpeedService);
 }
 
 export {
@@ -62,4 +66,6 @@ export {
   ILocalizationService,
   IGuildConfigService,
   IUserConfigService,
+  IActivityService,
+  IUserSpeedService,
 };

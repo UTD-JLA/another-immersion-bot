@@ -1,14 +1,40 @@
 import {IActivityService} from '../interfaces';
-import {Activity, IActivity, ActivityType} from '../../models/activity';
+import {
+  Activity,
+  IActivity,
+  ActivityType,
+  ActivityUnit,
+} from '../../models/activity';
 import {injectable} from 'inversify';
 
 @injectable()
 export default class ActivityService implements IActivityService {
-  async createActivity(activity: IActivity): Promise<IActivity> {
-    return await Activity.create(activity);
+  private readonly _createdListeners: Array<(activity: IActivity) => void>;
+
+  constructor() {
+    this._createdListeners = [];
   }
 
-  async getActivities(userId: string, limit?: number): Promise<IActivity[]> {
+  public async on(
+    _event: 'activityCreated',
+    listener: (activity: IActivity) => void
+  ) {
+    this._createdListeners.push(listener);
+  }
+
+  public async createActivity(activity: IActivity): Promise<IActivity> {
+    const a = await Activity.create(activity);
+    // Note: if other programs can write to the database,
+    // then it would be better to use MongoDB's change streams
+    // but this is fine for now
+    this._createdListeners.forEach(listener => listener(a));
+    return a;
+  }
+
+  public async getActivities(
+    userId: string,
+    limit?: number
+  ): Promise<IActivity[]> {
     const query = Activity.find({userId}).sort({date: -1});
 
     if (limit) {
@@ -18,15 +44,15 @@ export default class ActivityService implements IActivityService {
     }
   }
 
-  async getActivityById(activityId: string): Promise<IActivity | null> {
+  public async getActivityById(activityId: string): Promise<IActivity | null> {
     return await Activity.findById(activityId);
   }
 
-  async deleteActivityById(activityId: string): Promise<void> {
+  public async deleteActivityById(activityId: string): Promise<void> {
     await Activity.findByIdAndDelete(activityId);
   }
 
-  async getActivitiesInDateRange(
+  public async getActivitiesInDateRange(
     userId: string,
     startDate: Date,
     endDate: Date
@@ -42,7 +68,7 @@ export default class ActivityService implements IActivityService {
     return query.exec();
   }
 
-  async getTopMembers(
+  public async getTopMembers(
     memberIds: string[],
     limit: number,
     since?: Date,
@@ -87,7 +113,7 @@ export default class ActivityService implements IActivityService {
     );
   }
 
-  async getDailyDurationsInDateRange(
+  public async getDailyDurationsInDateRange(
     userId: string,
     startDate: Date,
     endDate: Date
@@ -125,10 +151,11 @@ export default class ActivityService implements IActivityService {
     return query.exec().then(docs => docs.map(doc => [doc._id, doc.duration]));
   }
 
-  async getSpeedsInDateRange(
+  public async getSpeedsInDateRange(
     userId: string,
     startDate: Date,
-    endDate: Date
+    endDate: Date,
+    type?: ActivityUnit
   ): Promise<[Date, number][]> {
     const query = Activity.find({
       userId,
@@ -137,6 +164,7 @@ export default class ActivityService implements IActivityService {
         $lte: endDate,
       },
       speed: {$ne: null},
+      rawDurationUnit: type,
     })
       .sort({date: 1})
       .select('date speed');
@@ -144,34 +172,5 @@ export default class ActivityService implements IActivityService {
     return query
       .exec()
       .then(docs => docs.map(doc => [doc.date, doc.speed!] as [Date, number]));
-  }
-
-  async getAverageSpeedInDateRange(
-    userId: string,
-    startDate: Date,
-    endDate: Date
-  ): Promise<number> {
-    const query = Activity.aggregate([
-      {
-        $match: {
-          userId,
-          date: {
-            $gte: startDate,
-            $lte: endDate,
-          },
-          speed: {$ne: null},
-        },
-      },
-      {
-        $group: {
-          _id: null,
-          averageSpeed: {
-            $avg: '$speed',
-          },
-        },
-      },
-    ]);
-
-    return query.exec().then(docs => docs[0]?.averageSpeed ?? 0);
   }
 }
