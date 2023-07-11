@@ -88,6 +88,8 @@ export interface IUserConfigService {
   setTimezone(userId: string, timezone: string): Promise<void>;
   getReadingSpeed(userId: string): Promise<number | undefined>;
   setReadingSpeed(userId: string, readingSpeed: number): Promise<void>;
+  getPageReadingSpeed(userId: string): Promise<number | undefined>;
+  setPageReadingSpeed(userId: string, readingSpeed: number): Promise<void>;
   getDailyGoal(userId: string): Promise<number | undefined>;
   setDailyGoal(userId: string, dailyGoal: number): Promise<void>;
 }

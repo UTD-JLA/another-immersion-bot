@@ -72,8 +72,8 @@ export default class UserSpeedService implements IUserSpeedService {
 
     const readingSpeeds = await this._activityService.getSpeedsInDateRange(
       userId,
-      // 7 days ago
-      new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+      // 21 days ago
+      new Date(Date.now() - 21 * 24 * 60 * 60 * 1000),
       new Date(),
       type
     );
@@ -87,11 +87,15 @@ export default class UserSpeedService implements IUserSpeedService {
       {readingSpeeds}
     );
 
+    // if no activity in the last 21 days then return 0
     if (readingSpeeds.length === 0) {
       return 0;
     }
 
-    const predictedSpeed = this._predictCurrentReadingSpeed(readingSpeeds);
+    const predictedSpeed = Math.max(
+      this._predictCurrentReadingSpeed(readingSpeeds),
+      0
+    );
 
     this._loggerService.debug(
       `Predicted speed for user ${userId} and type ${type}: ${predictedSpeed}`,

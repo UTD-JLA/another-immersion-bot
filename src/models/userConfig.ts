@@ -6,6 +6,7 @@ export interface IUserConfig {
   userId: string;
   timezone?: string;
   readingSpeed?: number;
+  readingSpeedPages?: number;
   dailyGoal?: number;
 }
 
@@ -22,6 +23,11 @@ const schema = new Schema<IUserConfig>({
     type: Number,
     min: 0,
     max: 1000,
+  },
+  readingSpeedPages: {
+    type: Number,
+    min: 0,
+    max: 20,
   },
   dailyGoal: {
     type: Number,
