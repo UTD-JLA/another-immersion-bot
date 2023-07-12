@@ -18,7 +18,7 @@ import LocalizationService from './impl/localization';
 import GuildConfigService from './impl/guildConfig';
 import UserConfigService from './impl/userConfig';
 import ActivityService from './impl/activity';
-import UserSpeedService from './impl/speed';
+import UserSpeedService from './impl/userSpeed';
 
 export function registerServices(container: Container) {
   container

@@ -5,11 +5,7 @@ import {
   ILoggerService,
 } from '../interfaces';
 import {ActivityUnit} from '../../models/activity';
-import {PrefixedCache, PrefixedExpiringCache} from '../../util/cache';
-
-type TimeAndSpeed = [Date, number];
-
-type ConversionFunction = (value: number) => number;
+import {Cache, PrefixedCache, PrefixedExpiringCache} from '../../util/cache';
 
 @injectable()
 export default class UserSpeedService implements IUserSpeedService {
@@ -22,10 +18,15 @@ export default class UserSpeedService implements IUserSpeedService {
   private readonly _speedCache: PrefixedCache<number> =
     new PrefixedExpiringCache(UserSpeedService.CACHE_TTL);
 
-  private readonly _convertCache: PrefixedCache<ConversionFunction> =
-    new PrefixedExpiringCache(UserSpeedService.CACHE_TTL);
+  private readonly _changes: Cache<number> = new Map();
 
-  private readonly _changes: Map<string, number> = new Map();
+  // number of days to look back for speed calculation
+  private static readonly N_DAYS = 21;
+
+  // lowest possible weight, weight values are between 0 and 1
+  // in this case reading speed from 21 days ago will matter 10% less
+  // than a reading speed just logged
+  private static readonly LOWEST_WEIGHT = 0.9;
 
   constructor(
     @inject('ActivityService')
@@ -51,7 +52,6 @@ export default class UserSpeedService implements IUserSpeedService {
         );
         this._changes.set(userId, 0);
         this._speedCache.deletePrefix(userId);
-        this._convertCache.deletePrefix(userId);
       }
     });
   }
@@ -72,8 +72,7 @@ export default class UserSpeedService implements IUserSpeedService {
 
     const readingSpeeds = await this._activityService.getSpeedsInDateRange(
       userId,
-      // 21 days ago
-      new Date(Date.now() - 21 * 24 * 60 * 60 * 1000),
+      new Date(Date.now() - UserSpeedService.N_DAYS * 24 * 60 * 60 * 1000),
       new Date(),
       type
     );
@@ -116,13 +115,6 @@ export default class UserSpeedService implements IUserSpeedService {
       return value;
     }
 
-    const cacheKey = `${userId}-${from}-${to}`;
-    const entry = this._convertCache.get(cacheKey);
-
-    if (typeof entry !== 'undefined') {
-      return entry(value);
-    }
-
     const [fromSpeeds, toSpeeds] = await Promise.all([
       this.predictSpeed(userId, from),
       this.predictSpeed(userId, to),
@@ -133,105 +125,66 @@ export default class UserSpeedService implements IUserSpeedService {
     }
 
     const f = this._createSpeedUnitConversion(toSpeeds, fromSpeeds);
-    this._convertCache.set(cacheKey, f);
     return f(value);
-  }
-
-  private _getBestFitLine(x: number[], y: number[]): [number, number] {
-    const n = x.length;
-    const sumX = x.reduce((a, b) => a + b, 0);
-    const sumY = y.reduce((a, b) => a + b, 0);
-    const sumXY = x.reduce((a, b, i) => a + b * y[i], 0);
-    const sumXX = x.reduce((a, b) => a + b * b, 0);
-    const m = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
-    const b = (sumY - m * sumX) / n;
-    return [m, b];
-  }
-
-  private _filterOutliers(
-    x: number[],
-    y: number[],
-    threshold: number
-  ): [number[], number[]] {
-    if (x.length !== y.length) {
-      throw new Error('x and y must be the same length');
-    }
-
-    const n = x.length;
-
-    if (n <= 2) {
-      return [x, y];
-    }
-
-    const [m, b] = this._getBestFitLine(x, y);
-    const yHat = x.map(x => m * x + b);
-    const residuals = y.map((y, i) => y - yHat[i]);
-    const std = Math.sqrt(residuals.reduce((a, b) => a + b * b, 0) / (n - 2));
-    const filteredX: number[] = [];
-    const filteredY: number[] = [];
-
-    for (let i = 0; i < n; i++) {
-      this._loggerService.debug(
-        `Residual for point ${i}: ${residuals[i]}, std: ${std}, threshold: ${threshold}`
-      );
-
-      if (Math.abs(residuals[i]) <= threshold * std) {
-        filteredX.push(x[i]);
-        filteredY.push(y[i]);
-      }
-    }
-
-    return [filteredX, filteredY];
   }
 
   /**
    * Predicts the user's current reading speed based on their past reading speeds.
    * @param speeds The user's past reading speeds
    * @param now The current time
-   * @returns The user's current reading speed
+   * @returns The user's current reading speed, 0 and NaN are possible values
    */
   private _predictCurrentReadingSpeed(
-    speeds: TimeAndSpeed[],
+    speeds: [Date, number][],
     now: Date = new Date()
   ): number {
-    if (speeds.length === 0) {
-      return 0;
-    }
+    const dateInDaysEpoch = (d: Date) => d.getTime() / (24 * 60 * 60 * 1000);
 
-    if (speeds.length === 1) {
-      return speeds[0][1];
-    }
+    // number of days included in the prediction
+    const D = UserSpeedService.N_DAYS;
+    // smallest weight to give to a reading speed
+    const L = UserSpeedService.LOWEST_WEIGHT;
+    // current time in days
+    const N = dateInDaysEpoch(now);
+    // weight function
+    // this function is linear and goes from 1 to L (0<=L<=1)
+    // as the reading speed gets older
+    const w = (t: number) => ((t - N) * (1 - L)) / D + 1;
 
-    const epoch = speeds[0][0].getTime();
-    const [t, y] = speeds.reduce(
-      ([t, y], [time, speed]) => {
-        t.push(time.getTime() - epoch);
-        y.push(speed);
-        return [t, y];
-      },
-      [[], []] as [number[], number[]]
+    const weights = speeds.map(([time]) => dateInDaysEpoch(time)).map(w);
+    const sumWeights = weights.reduce((a, b) => a + b, 0);
+    const weightedSpeeds = speeds.map(([, speed], i) => weights[i] * speed);
+
+    const mean = weightedSpeeds.reduce((a, b) => a + b, 0) / sumWeights;
+
+    const std = Math.sqrt(
+      weightedSpeeds
+        .map(speed => Math.pow(speed - mean, 2))
+        .reduce((a, b) => a + b, 0) / sumWeights
     );
 
-    const [filteredT, filteredY] = this._filterOutliers(t, y, 1.0);
+    const z = 1.96; // 95% confidence interval
+    const lowerBound = mean - z * std;
+    const upperBound = mean + z * std;
 
-    this._loggerService.debug(
-      `Filtered out ${t.length - filteredT.length} outliers`
-    );
-
-    const [m, b] = this._getBestFitLine(filteredT, filteredY);
-
-    this._loggerService.debug(
-      `Best fit line for ${speeds.length} data points: y = ${m}x + ${b}`
-    );
-
-    if (isNaN(m) || isNaN(b)) {
-      this._loggerService.warn(
-        `Best fit line for ${speeds.length} data points is NaN`
-      );
-      return 0;
+    if (lowerBound === upperBound) {
+      return lowerBound;
     }
 
-    return m * (now.getTime() - epoch) + b;
+    const filteredSpeeds = weightedSpeeds.filter(
+      speed => speed >= lowerBound && speed <= upperBound
+    );
+
+    const filteredWeights = weights.filter(
+      (_, i) =>
+        weightedSpeeds[i] >= lowerBound && weightedSpeeds[i] <= upperBound
+    );
+
+    const filteredSumWeights = filteredWeights.reduce((a, b) => a + b, 0);
+    const filteredMean =
+      filteredSpeeds.reduce((a, b) => a + b, 0) / filteredSumWeights;
+
+    return filteredMean;
   }
 
   /**
@@ -246,7 +199,7 @@ export default class UserSpeedService implements IUserSpeedService {
   private _createSpeedUnitConversion(
     predictedXSpeed: number,
     predictedYSpeed: number
-  ): ConversionFunction {
+  ): (value: number) => number {
     // Example: this would be (char/min) / (page/min) * page = # char
     return (n: number) => (predictedXSpeed / predictedYSpeed) * n;
   }
