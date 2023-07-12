@@ -1,6 +1,10 @@
 import {IGuildConfigService, IUserConfigService} from '../services';
 import moment from 'moment-timezone';
 
+export function getTimezones() {
+  return moment.tz.names();
+}
+
 export async function getUserTimezone(
   userService: IUserConfigService,
   guildService: IGuildConfigService,

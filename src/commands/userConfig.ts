@@ -6,22 +6,17 @@ import {
   EmbedBuilder,
 } from 'discord.js';
 import {injectable, inject} from 'inversify';
-import {
-  IUserConfigService,
-  IGuildConfigService,
-  IUserSpeedService,
-} from '../services';
+import {IUserConfigService, IUserSpeedService} from '../services';
 import {IConfig} from '../config';
 import {validateTimezone} from '../util/validation';
 import {ActivityUnit} from '../models/activity';
+import {getTimezones} from '../util/time';
 
 @injectable()
 export default class UserConfigCommand implements ICommand {
   constructor(
     @inject('UserConfigService')
     private readonly _userConfigService: IUserConfigService,
-    @inject('GuildConfigService')
-    private readonly _guildConfigService: IGuildConfigService,
     @inject('Config')
     private readonly _config: IConfig,
     @inject('UserSpeedService')
@@ -47,6 +42,7 @@ export default class UserConfigCommand implements ICommand {
                 .setName('timezone')
                 .setDescription('Your timezone')
                 .setRequired(true)
+                .setAutocomplete(true)
             )
         )
         .addSubcommand(subcommand =>
@@ -245,31 +241,49 @@ export default class UserConfigCommand implements ICommand {
 
     const subcommand = interaction.options.getSubcommand(true);
 
-    if (subcommand !== 'reading-speed') {
+    if (subcommand === 'reading-speed') {
+      const focused = interaction.options.getFocused(true);
+      const unit =
+        focused.name === 'reading-speed'
+          ? ActivityUnit.Character
+          : ActivityUnit.Page;
+      const unitChar = unit === ActivityUnit.Character ? 'c' : 'p';
+
+      const predictedSpeed = await this._userSpeedService.predictSpeed(
+        interaction.user.id,
+        unit
+      );
+
+      if (predictedSpeed === 0) {
+        return interaction.respond([]);
+      }
+
+      interaction.respond([
+        {
+          name: `Predicted value: ${predictedSpeed.toPrecision(
+            3
+          )} ${unitChar}pm`,
+          value: predictedSpeed,
+        },
+      ]);
+    } else if (subcommand === 'timezone') {
+      const focused = interaction.options.getFocused(true);
+      const timezones = getTimezones();
+
+      const filteredTimezones = timezones.filter(timezone =>
+        timezone
+          .toLowerCase()
+          .includes(focused.value.toLowerCase().replace(' ', '_'))
+      );
+
+      const options = filteredTimezones.map(timezone => ({
+        name: timezone,
+        value: timezone,
+      }));
+
+      interaction.respond(options.slice(0, 25));
+    } else {
       throw new Error('Invalid autocomplete');
     }
-
-    const focused = interaction.options.getFocused(true);
-    const unit =
-      focused.name === 'reading-speed'
-        ? ActivityUnit.Character
-        : ActivityUnit.Page;
-    const unitChar = unit === ActivityUnit.Character ? 'c' : 'p';
-
-    const predictedSpeed = await this._userSpeedService.predictSpeed(
-      interaction.user.id,
-      unit
-    );
-
-    if (predictedSpeed === 0) {
-      return interaction.respond([]);
-    }
-
-    interaction.respond([
-      {
-        name: `Predicted value: ${predictedSpeed.toPrecision(3)} ${unitChar}pm`,
-        value: predictedSpeed,
-      },
-    ]);
   }
 }
