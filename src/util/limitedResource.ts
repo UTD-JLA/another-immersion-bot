@@ -1,37 +1,46 @@
+export type ReleaseFn = () => void;
+
 export class LimitedResourceLock {
   constructor(private readonly _max: number) {}
 
   private readonly _queue: (() => void)[] = [];
   private _count = 0;
 
-  public async acquire(timeout?: number): Promise<void> {
+  public async acquire(timeout?: number): Promise<ReleaseFn> {
     if (this._count < this._max) {
       this._count++;
-      return;
+      return () => {
+        this._count--;
+        this._next();
+      };
     }
 
-    await new Promise<void>((resolve, reject) => {
-      if (timeout === undefined) {
-        this._queue.push(resolve);
-        return;
-      }
+    return new Promise((resolve, reject) => {
+      let isDeadEntry = false;
 
-      const timeoutId = setTimeout(() => {
-        reject(new Error('Timed out'));
-      }, timeout);
+      const timeoutId = timeout
+        ? setTimeout(() => {
+            isDeadEntry = true;
+            reject(new Error('Timeout acquiring lock'));
+          }, timeout)
+        : undefined;
 
       this._queue.push(() => {
-        clearTimeout(timeoutId);
-        resolve();
+        if (isDeadEntry) {
+          return;
+        }
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+        resolve(this.acquire(timeout));
       });
     });
   }
 
-  public release(): void {
-    if (this._queue.length > 0) {
-      this._queue.shift()!();
-    } else {
-      this._count--;
+  private _next() {
+    const next = this._queue.shift();
+    if (next) {
+      next();
     }
   }
 }

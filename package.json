@@ -36,7 +36,8 @@
     "moment-timezone": "^0.5.43",
     "mongoose": "^7.3.0",
     "reflect-metadata": "^0.1.13",
-    "winston": "^3.9.0"
+    "winston": "^3.9.0",
+    "zod": "^3.21.4"
   },
   "engines": {
     "node": ">=10.0.0"

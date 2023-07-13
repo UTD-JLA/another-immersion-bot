@@ -5,35 +5,37 @@ import {
   ILoggerService,
 } from '../interfaces';
 import {ActivityUnit} from '../../models/activity';
+import {IConfig} from '../../config';
 import {Cache, PrefixedCache, PrefixedExpiringCache} from '../../util/cache';
 
 @injectable()
 export default class UserSpeedService implements IUserSpeedService {
   // Cache for 6 hours
-  private static readonly CACHE_TTL = 6 * 60 * 60 * 1000;
-
+  private static readonly DEFAULT_CACHE_TTL = 6 * 60 * 60 * 1000;
   // Clear cache for user every 5 changes even if TTL hasn't expired
-  private static readonly CLEAR_EVERY_N_CHANGES = 5;
-
-  private readonly _speedCache: PrefixedCache<number> =
-    new PrefixedExpiringCache(UserSpeedService.CACHE_TTL);
-
-  private readonly _changes: Cache<number> = new Map();
-
+  private static readonly DEFAULT_CLEAR_EVERY_N_CHANGES = 5;
   // number of days to look back for speed calculation
-  private static readonly N_DAYS = 21;
-
+  private static readonly DEFAULT_N_DAYS = 21;
   // lowest possible weight, weight values are between 0 and 1
   // in this case reading speed from 21 days ago will matter 10% less
   // than a reading speed just logged
-  private static readonly LOWEST_WEIGHT = 0.9;
+  private static readonly DEFAULT_LOWEST_WEIGHT = 0.9;
+
+  private readonly _changes: Cache<number> = new Map();
+  private readonly _speedCache: PrefixedCache<number>;
 
   constructor(
     @inject('ActivityService')
     private readonly _activityService: IActivityService,
     @inject('LoggerService')
-    private readonly _loggerService: ILoggerService
+    private readonly _loggerService: ILoggerService,
+    @inject('Config')
+    private readonly _config: IConfig
   ) {
+    this._speedCache = new PrefixedExpiringCache(
+      _config.speedCacheTtl || UserSpeedService.DEFAULT_CACHE_TTL
+    );
+
     this._activityService.on('activityCreated', activity => {
       if (!activity.speed)
         return this._loggerService.debug(
@@ -43,7 +45,9 @@ export default class UserSpeedService implements IUserSpeedService {
       const userId = activity.userId;
       this._changes.set(userId, (this._changes.get(userId) ?? 0) + 1);
       if (
-        this._changes.get(userId)! >= UserSpeedService.CLEAR_EVERY_N_CHANGES
+        this._changes.get(userId)! >=
+        (_config.speedCacheClearEvery ||
+          UserSpeedService.DEFAULT_CLEAR_EVERY_N_CHANGES)
       ) {
         this._loggerService.debug(
           `Clearing cache for user ${userId} after ${this._changes.get(
@@ -72,7 +76,14 @@ export default class UserSpeedService implements IUserSpeedService {
 
     const readingSpeeds = await this._activityService.getSpeedsInDateRange(
       userId,
-      new Date(Date.now() - UserSpeedService.N_DAYS * 24 * 60 * 60 * 1000),
+      new Date(
+        Date.now() -
+          (this._config.speedLookbackDays || UserSpeedService.DEFAULT_N_DAYS) *
+            24 *
+            60 *
+            60 *
+            1000
+      ),
       new Date(),
       type
     );
@@ -88,6 +99,7 @@ export default class UserSpeedService implements IUserSpeedService {
 
     // if no activity in the last 21 days then return 0
     if (readingSpeeds.length === 0) {
+      this._speedCache.set(cacheKey, 0);
       return 0;
     }
 
@@ -141,9 +153,10 @@ export default class UserSpeedService implements IUserSpeedService {
     const dateInDaysEpoch = (d: Date) => d.getTime() / (24 * 60 * 60 * 1000);
 
     // number of days included in the prediction
-    const D = UserSpeedService.N_DAYS;
+    const D = this._config.speedLookbackDays || UserSpeedService.DEFAULT_N_DAYS;
     // smallest weight to give to a reading speed
-    const L = UserSpeedService.LOWEST_WEIGHT;
+    const L =
+      this._config.speedLowestWeight || UserSpeedService.DEFAULT_LOWEST_WEIGHT;
     // current time in days
     const N = dateInDaysEpoch(now);
     // weight function

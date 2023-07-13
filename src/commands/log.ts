@@ -14,9 +14,9 @@ import {
 } from '../services';
 import {inject, injectable} from 'inversify';
 import {spawn} from 'child_process';
-import {LimitedResourceLock} from '../util/limitedResource';
+import {LimitedResourceLock, ReleaseFn} from '../util/limitedResource';
 import {cpus} from 'os';
-import {IColorConfig, IConfig} from '../config';
+import {IConfig} from '../config';
 import {getUserTimezone, parseTimeWithUserTimezone} from '../util/time';
 import {getCommandBuilder} from './log.data';
 import {IActivityService, IUserSpeedService} from '../services/interfaces';
@@ -38,16 +38,14 @@ export default class LogCommand implements ICommand {
   private readonly _autocompleteService: IAutocompletionService;
   private readonly _loggerService: ILoggerService;
   private readonly _localizationService: ILocalizationService;
-  private readonly _colors: IColorConfig;
   private readonly _guildConfigService: IGuildConfigService;
   private readonly _userConfigService: IUserConfigService;
   private readonly _activityService: IActivityService;
   private readonly _userSpeedService: IUserSpeedService;
+  private readonly _config: IConfig;
 
   // TODO: make configurable
-  private readonly _subprocessLock = new LimitedResourceLock(
-    cpus().length * 10
-  );
+  private readonly _subprocessLock: LimitedResourceLock;
 
   private static readonly KNOWN_HOST_TAGS = new Map<string, string>([
     ['youtube.com', 'youtube'],
@@ -77,14 +75,17 @@ export default class LogCommand implements ICommand {
     this._autocompleteService = autocompleteService;
     this._loggerService = loggerService;
     this._localizationService = localizationService;
-    this._colors = config.colors;
     this._guildConfigService = guildConfigService;
     this._userConfigService = userConfigService;
     this._activityService = activityService;
     this._userSpeedService = userSpeedService;
+    this._config = config;
+
+    this._subprocessLock = new LimitedResourceLock(
+      config.maxYtdlProcesses ?? cpus().length * 10
+    );
   }
 
-  // TODO: anime, vn, etc. shortcuts
   public get data() {
     return getCommandBuilder(this._localizationService);
   }
@@ -213,32 +214,38 @@ export default class LogCommand implements ICommand {
       return;
     }
 
+    let release: ReleaseFn;
+
     try {
-      // TODO: also make this configurable
+      const timeToWait =
+        this._config.proccessAcquisitionTimeout ?? 1 * 60 * 1000;
       // NOTE: Discord API gives us 15 minutes to edit the reply
       // This is in milliseconds
-      await this._subprocessLock.acquire(1 * 60 * 1000);
+      release = await this._subprocessLock.acquire(
+        Math.min(timeToWait, 14.5 * 60 * 1000)
+      );
     } catch (error) {
       await interaction.editReply({
         content: "I'm busy right now, please try again later",
       });
-      // Timout does not release it automatically
-      this._subprocessLock.release();
       // IMPORTANT: do not continue unless we have the lock
       return;
     }
 
     // Attempt to call yt-dlp to extract info about the user-specified url
-    let vidInfo: VideoURLExtractedInfo;
+    let vidInfo: VideoURLExtractedInfo | undefined;
     try {
       vidInfo = await this._extractVideoInfo(urlComponents);
     } catch (error) {
       await interaction.editReply({
         content: 'Invalid or unsupported URL',
       });
-      return;
     } finally {
-      this._subprocessLock.release();
+      release();
+    }
+
+    if (!vidInfo) {
+      return;
     }
 
     const enteredDuration = interaction.options.getNumber('duration', false);
@@ -291,7 +298,7 @@ export default class LogCommand implements ICommand {
       .setFooter({text: `ID: ${activity._id}`})
       .setImage(vidInfo.thumbnail)
       .setTimestamp(activity.date)
-      .setColor(this._colors.success);
+      .setColor(this._config.colors.success);
 
     await interaction.editReply({
       embeds: [embed],
@@ -367,7 +374,7 @@ export default class LogCommand implements ICommand {
       )
       .setFooter({text: `ID: ${activity._id}`})
       .setTimestamp(activity.date)
-      .setColor(this._colors.success);
+      .setColor(this._config.colors.success);
 
     await interaction.editReply({
       embeds: [embed],
@@ -455,7 +462,7 @@ export default class LogCommand implements ICommand {
       )
       .setFooter({text: `ID: ${activity._id}`})
       .setTimestamp(activity.date)
-      .setColor(this._colors.success);
+      .setColor(this._config.colors.success);
 
     await interaction.editReply({
       embeds: [embed],
@@ -590,7 +597,7 @@ export default class LogCommand implements ICommand {
       )
       .setFooter({text: `ID: ${activity._id}`})
       .setTimestamp(activity.date)
-      .setColor(this._colors.success);
+      .setColor(this._config.colors.success);
 
     if (charStats) {
       embed.addFields({
@@ -705,7 +712,7 @@ export default class LogCommand implements ICommand {
       .setTitle('Activity logged!')
       .setFooter({text: `ID: ${activity._id}`})
       .setTimestamp(activity.date)
-      .setColor(this._colors.success);
+      .setColor(this._config.colors.success);
 
     if (timezone) {
       embed.setDescription(

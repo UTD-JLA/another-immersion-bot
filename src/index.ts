@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import {Client, GatewayIntentBits, REST, Routes, Events} from 'discord.js';
 import {connect} from 'mongoose';
-import {Config, IConfig} from './config';
+import {Config, IConfig, ConfigFields} from './config';
 import {onClientReady, onInteractionCreate} from './events';
 import commands, {ICommand} from './commands';
 import {
@@ -12,30 +12,44 @@ import {
 import {Container} from 'inversify';
 import {sync as commandExistsSync} from 'command-exists';
 
-const config = Config.fromJsonFile(
-  process.env['IB_CONFIG_LOCATION'] ?? 'config.json',
-  {
-    token: process.env['IB_TOKEN'],
-    mongoUrl: process.env['IB_MONGO_URL'],
-    chartServiceUrl: process.env['IB_CHART_SERVICE_URL'],
-    materialsPath: process.env['IB_MATERIALS_PATH'],
-    logLevel: process.env['IB_LOG_LEVEL'],
-    localesPath: process.env['IB_LOCALES_PATH'],
+(async function main() {
+  if (process.argv.length > 2) {
+    if (process.argv[2] === 'help') {
+      printHelp();
+      return;
+    }
   }
-);
 
-const client = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
-}) as Client & {container: Container};
+  await runBot();
+})();
 
-const rest = new REST().setToken(config.token);
+function printHelp() {
+  console.log('Available config variables:');
+  ConfigFields.forEach(field => {
+    console.log(
+      `  ${field.name} - ${field.description} ${
+        field.optional ? '(optional)' : ''
+      }`
+    );
+  });
+}
 
-(async () => {
+async function runBot() {
+  const config = Config.getStandardConfig();
+
+  const client = new Client({
+    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
+  }) as Client & {container: Container};
+
+  const rest = new REST().setToken(config.token);
+
   const container = new Container({defaultScope: 'Singleton'});
   container.bind<IConfig>('Config').toConstantValue(config);
   registerServices(container);
 
   const logger = container.get<ILoggerService>('LoggerService');
+
+  logger.debug('Loaded config', config);
 
   for (const command of commands) {
     logger.log(`Registering command ${command.name}`);
@@ -74,4 +88,4 @@ const rest = new REST().setToken(config.token);
       'yt-dlp is not installed. Some commands may not work as expected.'
     );
   }
-})();
+}
