@@ -60,19 +60,44 @@ export default class LocalizationService implements ILocalizationService {
   public localize(key: string, ...args: Stringifiable[]): string | undefined {
     const formatString = this._localeStore.get(key);
 
-    if (formatString && args.length) {
-      return LocalizationService._formatString(formatString, ...args);
+    if (!formatString) {
+      return undefined;
     }
 
-    return formatString;
+    return LocalizationService._formatString(formatString, ...args);
   }
 
   public mustLocalize(
     key: string,
     defaultValue: string,
-    ...args: any[]
+    ...args: Stringifiable[]
   ): string {
     return this.localize(key, ...args) ?? defaultValue;
+  }
+
+  /**
+   * Create a new ILocalizationService with the locale set
+   * @param locale Set the locale to use for localization
+   * @returns A new ILocalizationService with the locale set
+   */
+  public useScope(
+    locale: Locale,
+    scope?: string
+  ): Omit<ILocalizationService, 'useScope' | 'getAllLocalizations'> {
+    const prefix = locale + (scope ? `.${scope}` : '');
+
+    return {
+      localize: (key: string, ...args: Stringifiable[]): string | undefined => {
+        return this.localize(`${prefix}.${key}`, ...args);
+      },
+      mustLocalize: (
+        key: string,
+        defaultValue: string,
+        ...args: Stringifiable[]
+      ): string => {
+        return this.mustLocalize(`${prefix}.${key}`, defaultValue, ...args);
+      },
+    };
   }
 
   private static _formatString(

@@ -68,6 +68,10 @@ export interface ILocalizationService {
     ...args: Stringifiable[]
   ): string;
   getAllLocalizations(subkey: string): Record<Locale, string>;
+  useScope(
+    locale: Locale,
+    scope?: string
+  ): Omit<ILocalizationService, 'useScope' | 'getAllLocalizations'>;
 }
 
 export interface IGuildConfigService {
