@@ -1,5 +1,19 @@
 import * as fs from 'fs';
 import {z} from 'zod';
+import {dirname} from 'path';
+
+declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
+  namespace NodeJS {
+    // add pkg to process object
+    interface Process {
+      pkg?: {
+        entrypoint: string;
+        defaultEntrypoint: string;
+      };
+    }
+  }
+}
 
 export interface IColorConfig {
   primary: `#${string}`;
@@ -37,7 +51,11 @@ export const ConfigSchema = z.object({
       'The path to the materials directory. Should contain text files' +
         '(named LANG_CODE.TYPE.ETC.txt, ex. en.anime.mal.txt) of line seperated titles to be used for autocompletion'
     )
-    .default(__dirname + '/../data'),
+    .default(
+      // do not package materials with pkg
+      // instead, use the materials directory in the same directory as the executable
+      process.pkg ? dirname(process.execPath) + '/data' : __dirname + '/../data'
+    ),
   token: z.string().describe('The bot token to use'),
   mongoUrl: z
     .string()
@@ -52,7 +70,13 @@ export const ConfigSchema = z.object({
   localesPath: z
     .string()
     .describe('The path to the locales directory')
-    .default(__dirname + '/../locales'),
+    .default(
+      // do not package locales with pkg
+      // instead, use the locales directory in the same directory as the executable
+      process.pkg
+        ? dirname(process.execPath) + '/locales'
+        : __dirname + '/../locales'
+    ),
   maxYtdlProcesses: z
     .number()
     .min(0)

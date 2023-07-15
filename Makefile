@@ -22,6 +22,10 @@ py-server: py-server/main.py
 zip: bot py-server
 	cp LICENSE ./dist
 	cp README.md ./dist
+	mkdir -p ./dist/data
+	mkdir -p ./dist/locales
+	cp -R data/* ./dist/data
+	cp -R locales/* ./dist/locales
 
 	tar cfz dist-linux-amd64-v$(VERSION).tar.gz -C dist .
 
