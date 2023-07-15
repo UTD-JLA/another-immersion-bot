@@ -2,6 +2,7 @@ import {
   ChatInputCommandInteraction,
   AutocompleteInteraction,
   EmbedBuilder,
+  Locale,
 } from 'discord.js';
 import {ICommand} from '.';
 import {ActivityType, ActivityUnit, IActivity} from '../models/activity';
@@ -55,6 +56,41 @@ export default class LogCommand implements ICommand {
   private static readonly BASE_READING_SPEED = 200; // words per minute
 
   private static readonly BASE_CHARS_PER_PAGE = 120; // characters per page (manga)
+
+  // Some Discord locale codes are not supported by YouTube
+  private static readonly YT_LOCALES = new Map<Locale, string>([
+    [Locale.Indonesian, 'id'],
+    [Locale.EnglishUS, 'en'],
+    [Locale.EnglishGB, 'en-GB'],
+    [Locale.Bulgarian, 'bg'],
+    [Locale.ChineseCN, 'zh-CN'],
+    [Locale.ChineseTW, 'zh-TW'],
+    [Locale.Croatian, 'hr'],
+    [Locale.Czech, 'cs'],
+    [Locale.Danish, 'da'],
+    [Locale.Dutch, 'nl'],
+    [Locale.Finnish, 'fi'],
+    [Locale.French, 'fr'],
+    [Locale.German, 'de'],
+    [Locale.Greek, 'el'],
+    [Locale.Hindi, 'hi'],
+    [Locale.Hungarian, 'hu'],
+    [Locale.Italian, 'it'],
+    [Locale.Japanese, 'ja'],
+    [Locale.Korean, 'ko'],
+    [Locale.Lithuanian, 'lt'],
+    [Locale.Norwegian, 'no'],
+    [Locale.Polish, 'pl'],
+    [Locale.PortugueseBR, 'pt'],
+    [Locale.Romanian, 'ro'],
+    [Locale.Russian, 'ru'],
+    [Locale.SpanishES, 'es'],
+    [Locale.Swedish, 'sv'],
+    [Locale.Thai, 'th'],
+    [Locale.Turkish, 'tr'],
+    [Locale.Ukrainian, 'uk'],
+    [Locale.Vietnamese, 'vi'],
+  ]);
 
   constructor(
     @inject('AutocompletionService')
@@ -112,17 +148,31 @@ export default class LogCommand implements ICommand {
   private async _getVideoTags(url: URL): Promise<string[]> {
     try {
       const info = await this._extractVideoInfo(url);
-      return [info.uploaderName, info.uploaderId];
+      return ['video', info.extractor, info.uploaderName, info.uploaderId];
     } catch (error) {
       return [];
     }
   }
 
-  private _extractVideoInfo(url: URL): Promise<VideoURLExtractedInfo> {
+  private _extractVideoInfo(
+    url: URL,
+    locale?: Locale
+  ): Promise<VideoURLExtractedInfo> {
     // Calculate starting at a particular time if the user provides a timed url (assuming the 't' parameter, as in YouTube links)
     const seekTime = url.searchParams.has('t')
       ? parseInt(url.searchParams.get('t')!)
       : undefined;
+
+    // yt-dlp expects the locale to be in the format of 'en-US' instead of 'en'
+    const ytLocale = LogCommand.YT_LOCALES.get(locale ?? Locale.EnglishUS);
+
+    const extractorArgs = ytLocale
+      ? ['--extractor-args', `youtube:lang=${ytLocale}`]
+      : [];
+
+    this._loggerService.debug(`Extracting video info from ${url.toString()}`, {
+      extractorArgs,
+    });
 
     return new Promise((resolve, reject) => {
       const stdout: Buffer[] = [];
@@ -133,8 +183,20 @@ export default class LogCommand implements ICommand {
         [
           '--no-call-home',
           '--skip-download',
+          ...extractorArgs,
           '--print',
-          '{"id":%(id)j,"extractor":%(extractor)j,"title":%(title)j,"uploader_id":%(uploader_id)j,"uploader":%(uploader)j,"duration":%(duration)j,"thumbnail":%(thumbnail)j, "description":%(description)j}',
+          `
+          {
+            "id":%(id)j,
+            "extractor":%(extractor)j,
+            "title":%(title)j,
+            "uploader_id":%(uploader_id)j,
+            "uploader":%(uploader)j,
+            "duration":%(duration)j,
+            "thumbnail":%(thumbnail)j,
+            "description":%(description)j
+          }
+          `,
           url.toString(),
         ],
         {shell: false}
@@ -241,7 +303,7 @@ export default class LogCommand implements ICommand {
     let vidInfo: VideoURLExtractedInfo | undefined;
     try {
       const urlComponents = new URL(url);
-      vidInfo = await this._extractVideoInfo(urlComponents);
+      vidInfo = await this._extractVideoInfo(urlComponents, interaction.locale);
     } catch (error) {
       await interaction.editReply({
         content: i18n.localize('ytdl-fail') ?? 'Failed to get video info',
