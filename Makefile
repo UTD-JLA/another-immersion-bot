@@ -24,7 +24,7 @@ data-update: scripts/data-update/*.go
 
 zip: bot py-server data-update
 	cp LICENSE ./dist
-	cp README.md ./dist
+	cp README-dist.txt ./dist/README.txt
 	mkdir -p ./dist/data
 	mkdir -p ./dist/locales
 	cp -R data/* ./dist/data
