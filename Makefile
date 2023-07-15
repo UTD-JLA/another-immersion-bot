@@ -19,7 +19,10 @@ py-server: py-server/main.py
 	$(VENV_DIR)/bin/pip install pyinstaller
 	$(VENV_DIR)/bin/pyinstaller ./py-server/main.py -n py-server -F --hidden-import='PIL._tkinter_finder'
 
-zip: bot py-server
+data-update: scripts/data-update/*.go
+	cd scripts/data-update && go build -o ../../dist/data-update
+
+zip: bot py-server data-update
 	cp LICENSE ./dist
 	cp README.md ./dist
 	mkdir -p ./dist/data
