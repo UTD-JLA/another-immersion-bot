@@ -59,7 +59,7 @@ export default class UndoCommand implements ICommand {
         1
       );
 
-      if (!foundActivity) {
+      if (foundActivity.length === 0) {
         await interaction.reply('No activity to undo');
         return;
       }
