@@ -30,6 +30,7 @@ export default class LocalizationService implements ILocalizationService {
       const localeData = JSON.parse(localeFile);
       locales[locale] = localeData;
       this._locales.add(locale as Locale);
+      this._logger.log(`Loaded locale file: ${file}`);
     }
 
     this._localeStore = LocalizationService._flattenedLocaleData(locales);
@@ -38,7 +39,7 @@ export default class LocalizationService implements ILocalizationService {
 
   private _printLocaleStore() {
     for (const [k, v] of this._localeStore.entries()) {
-      this._logger.log(`Loaded locale string: ${k} => ${v}`);
+      this._logger.debug(`Loaded locale string: ${k} => ${v}`);
     }
   }
 

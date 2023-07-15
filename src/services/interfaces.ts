@@ -60,6 +60,8 @@ export interface ILoggerService {
   debug(message: string, meta?: any): void;
 }
 
+export type LocalizationScope = ReturnType<ILocalizationService['useScope']>;
+
 export interface ILocalizationService {
   localize(key: string, ...args: Stringifiable[]): string | undefined;
   mustLocalize(
