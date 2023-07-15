@@ -10,7 +10,7 @@ import {AttachmentBuilder} from 'discord.js';
 import {IConfig, IColorConfig} from '../config';
 import {IUserConfigService, IGuildConfigService} from '../services';
 import {parseTimeWithUserTimezone, calculateDeltaInDays} from '../util/time';
-import {IActivityService} from '../services/interfaces';
+import {IActivityService, ILocalizationService} from '../services/interfaces';
 
 @injectable()
 export default class ChartCommand implements ICommand {
@@ -19,55 +19,128 @@ export default class ChartCommand implements ICommand {
   private readonly _userService: IUserConfigService;
   private readonly _guildService: IGuildConfigService;
   private readonly _activityService: IActivityService;
+  private readonly _localizationService: ILocalizationService;
 
   constructor(
     @inject('ChartService') chartService: IChartService,
     @inject('Config') config: IConfig,
     @inject('UserConfigService') userService: IUserConfigService,
     @inject('GuildConfigService') guildService: IGuildConfigService,
-    @inject('ActivityService') activityService: IActivityService
+    @inject('ActivityService') activityService: IActivityService,
+    @inject('LocalizationService') localizationService: ILocalizationService
   ) {
     this._chartService = chartService;
     this._colors = config.colors;
     this._userService = userService;
     this._guildService = guildService;
     this._activityService = activityService;
+    this._localizationService = localizationService;
   }
 
-  public readonly data = <SlashCommandBuilder>new SlashCommandBuilder()
-    .setName('chart')
-    .setDescription('Chart command')
-    .addSubcommand(subcommand =>
-      subcommand
-        .setName('weekly')
-        .setDescription('Get a chart of your activities for the last week')
-    )
-    .addSubcommand(subcommand =>
-      subcommand
-        .setName('monthly')
-        .setDescription('Get a chart of your activities for the last month')
-    )
-    .addSubcommand(subcommand =>
-      subcommand
-        .setName('yearly')
-        .setDescription('Get a chart of your activities for the last year')
-    )
-    .addSubcommand(subcommand =>
-      subcommand
-        .setName('custom')
-        .setDescription('Get a chart of your activities for a custom time span')
-        .addStringOption(option =>
-          option
-            .setName('beginning')
-            .setDescription('Beginning date')
-            .setRequired(true)
-        )
-        .addStringOption(option =>
-          option.setName('end').setDescription('End date').setRequired(true)
-        )
-    );
+  public get data() {
+    return new SlashCommandBuilder()
+      .setName('chart')
+      .setNameLocalizations(
+        this._localizationService.getAllLocalizations('chart.name')
+      )
+      .setDescription('Chart command')
+      .setDescriptionLocalizations(
+        this._localizationService.getAllLocalizations('chart.description')
+      )
+      .addSubcommand(subcommand =>
+        subcommand
+          .setName('weekly')
+          .setNameLocalizations(
+            this._localizationService.getAllLocalizations('chart.weekly.name')
+          )
+          .setDescription('Get a chart of your activities for the last week')
+          .setDescriptionLocalizations(
+            this._localizationService.getAllLocalizations(
+              'chart.weekly.description'
+            )
+          )
+      )
+      .addSubcommand(subcommand =>
+        subcommand
+          .setName('monthly')
+          .setNameLocalizations(
+            this._localizationService.getAllLocalizations('chart.monthly.name')
+          )
+          .setDescription('Get a chart of your activities for the last month')
+          .setDescriptionLocalizations(
+            this._localizationService.getAllLocalizations(
+              'chart.monthly.description'
+            )
+          )
+      )
+      .addSubcommand(subcommand =>
+        subcommand
+          .setName('yearly')
+          .setNameLocalizations(
+            this._localizationService.getAllLocalizations('chart.yearly.name')
+          )
+          .setDescription('Get a chart of your activities for the last year')
+          .setDescriptionLocalizations(
+            this._localizationService.getAllLocalizations(
+              'chart.yearly.description'
+            )
+          )
+      )
+      .addSubcommand(subcommand =>
+        subcommand
+          .setName('custom')
+          .setNameLocalizations(
+            this._localizationService.getAllLocalizations('chart.custom.name')
+          )
+          .setDescription(
+            'Get a chart of your activities for a custom time span'
+          )
+          .setDescriptionLocalizations(
+            this._localizationService.getAllLocalizations(
+              'chart.custom.description'
+            )
+          )
+          .addStringOption(option =>
+            option
+              .setName('beginning')
+              .setNameLocalizations(
+                this._localizationService.getAllLocalizations(
+                  'chart.custom.beginning.name'
+                )
+              )
+              .setDescription('Beginning date')
+              .setDescriptionLocalizations(
+                this._localizationService.getAllLocalizations(
+                  'chart.custom.beginning.description'
+                )
+              )
+              .setRequired(true)
+          )
+          .addStringOption(option =>
+            option
+              .setName('end')
+              .setNameLocalizations(
+                this._localizationService.getAllLocalizations(
+                  'chart.custom.end.name'
+                )
+              )
+              .setDescription('End date')
+              .setDescriptionLocalizations(
+                this._localizationService.getAllLocalizations(
+                  'chart.custom.end.description'
+                )
+              )
+              .setRequired(true)
+          )
+      ) as SlashCommandBuilder;
+  }
 
   public async execute(interaction: ChatInputCommandInteraction) {
+    const i18n = this._localizationService.useScope(
+      interaction.locale,
+      'chart.messages'
+    );
+
     await interaction.deferReply();
 
     const maxBuckets = 20;
@@ -94,14 +167,22 @@ export default class ChartCommand implements ICommand {
 
       if (!parsedBeginningDate) {
         await interaction.editReply({
-          content: `Invalid beginning date: ${beginningString}`,
+          content: i18n.mustLocalize(
+            'invalid-date',
+            `Invalid date: ${beginningString}`,
+            beginningString
+          ),
         });
         return;
       }
 
       if (!parsedEndDate) {
         await interaction.editReply({
-          content: `Invalid end date: ${endString}`,
+          content: i18n.mustLocalize(
+            'invalid-date',
+            `Invalid date: ${endString}`,
+            endString
+          ),
         });
         return;
       }
@@ -121,7 +202,11 @@ export default class ChartCommand implements ICommand {
       hundredYearsAgo.setFullYear(hundredYearsAgo.getFullYear() - 100);
       if (actualBeginningDate.getTime() < hundredYearsAgo.getTime()) {
         await interaction.editReply({
-          content: 'Beginning date cannot be more than 100 years in the past',
+          content: i18n.mustLocalize(
+            'cannot-be-more-than-n-years-in-the-past',
+            'Beginning date cannot be more than 100 years in the past',
+            100
+          ),
         });
         return;
       }
@@ -129,7 +214,10 @@ export default class ChartCommand implements ICommand {
       // Don't allow graphing the future
       if (actualEndDate.getTime() > new Date().getTime()) {
         await interaction.editReply({
-          content: 'Beginning date cannot be in the future',
+          content: i18n.mustLocalize(
+            'cannot-be-in-the-future',
+            'End date cannot be in the future'
+          ),
         });
         return;
       }
@@ -226,43 +314,94 @@ export default class ChartCommand implements ICommand {
 
     const attachment = new AttachmentBuilder(chart).setName('chart.png');
 
-    const spanTitle = span.charAt(0).toUpperCase() + span.slice(1);
-    const spanNoun =
+    const spanTitle =
       span === 'custom'
-        ? `${timeDeltaDays.toPrecision(2)} days`
+        ? i18n.mustLocalize('custom-span-title', 'Custom Graph')
         : span === 'yearly'
-        ? 'year'
+        ? i18n.mustLocalize('yearly-span-title', 'Yearly Graph')
         : span === 'monthly'
-        ? 'month'
-        : 'week';
-    const bucketDescription =
+        ? i18n.mustLocalize('monthly-span-title', 'Monthly Graph')
+        : i18n.mustLocalize('weekly-span-title', 'Weekly Graph');
+
+    const embedDescription =
       span === 'custom'
-        ? `${daysPerBucket.toPrecision(2)} days`
+        ? i18n.mustLocalize(
+            'custom-span-description',
+            `Below is a chart of your logged time for the last ${timeDeltaDays.toPrecision(
+              2
+            )} days along with some statistics!`,
+            timeDeltaDays.toPrecision(2)
+          )
         : span === 'yearly'
-        ? 'one month'
-        : 'one day';
+        ? i18n.mustLocalize(
+            'yearly-span-description',
+            'Below is a chart of your logged time for the last year along with some statistics!'
+          )
+        : span === 'monthly'
+        ? i18n.mustLocalize(
+            'monthly-span-description',
+            'Below is a chart of your logged time for the last month along with some statistics!'
+          )
+        : i18n.mustLocalize(
+            'weekly-span-description',
+            'Below is a chart of your logged time for the last week along with some statistics!'
+          );
+
+    const embedFooter =
+      span === 'custom'
+        ? i18n.mustLocalize(
+            'custom-span-footer',
+            `Each bar represents ${daysPerBucket.toPrecision(2)} days.`,
+            daysPerBucket.toPrecision(2)
+          )
+        : span === 'yearly'
+        ? i18n.mustLocalize(
+            'yearly-span-footer',
+            'Each bar represents one month.'
+          )
+        : span === 'monthly'
+        ? i18n.mustLocalize(
+            'monthly-span-footer',
+            'Each bar represents one day.'
+          )
+        : i18n.mustLocalize(
+            'weekly-span-footer',
+            'Each bar represents one day.'
+          );
+
     const embed = new EmbedBuilder()
-      .setTitle(`${spanTitle} Logged Time`)
-      .setDescription(
-        `Below is a chart of your logged time for the last ${spanNoun} along with some statistics!`
-      )
+      .setTitle(spanTitle)
+      .setDescription(embedDescription)
       .setFields(
         {
-          name: 'Total Time',
-          value: `${roundedTotalTime} minutes`,
+          name: i18n.mustLocalize('total-minutes', 'Total Minutes'),
+          value: i18n.mustLocalize(
+            'n-minutes',
+            `${roundedTotalTime} minutes`,
+            roundedTotalTime
+          ),
         },
         {
-          name: 'Average Time',
-          value: `${roundedAverageTime} minutes`,
+          name: i18n.mustLocalize('average-time', 'Average Time'),
+          value: i18n.mustLocalize(
+            'n-minutes',
+            `${roundedAverageTime} minutes`,
+            roundedAverageTime
+          ),
         },
         {
-          name: 'Peak Time',
-          value: `${roundedPeakTime} minutes on ${peakDay}`,
+          name: i18n.mustLocalize('peak-time', 'Peak Time'),
+          value: i18n.mustLocalize(
+            'n-minutes-on-date',
+            `${roundedPeakTime} minutes on ${peakDay}`,
+            roundedPeakTime,
+            peakDay
+          ),
         }
       )
       .setImage('attachment://chart.png')
       .setColor(this._colors.primary)
-      .setFooter({text: `Each bar represents ${bucketDescription}.`});
+      .setFooter({text: embedFooter});
 
     await interaction.editReply({
       embeds: [embed],

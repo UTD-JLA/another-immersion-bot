@@ -8,11 +8,16 @@ import {
   ActionRowBuilder,
   EmbedBuilder,
   ButtonStyle,
+  Locale,
 } from 'discord.js';
 import {inject, injectable} from 'inversify';
 import {IGuildConfigService, IUserConfigService} from '../services';
 import {getUserTimezone} from '../util/time';
-import {IActivityService} from '../services/interfaces';
+import {
+  IActivityService,
+  ILocalizationService,
+  LocalizationScope,
+} from '../services/interfaces';
 
 @injectable()
 export default class HistoryCommand implements ICommand {
@@ -20,42 +25,83 @@ export default class HistoryCommand implements ICommand {
   private readonly _userConfigService: IUserConfigService;
   private readonly _guildConfigService: IGuildConfigService;
   private readonly _activityService: IActivityService;
+  private readonly _localizationService: ILocalizationService;
 
   constructor(
     @inject('Config') config: IConfig,
     @inject('UserConfigService') userConfigService: IUserConfigService,
     @inject('GuildConfigService') guildConfigService: IGuildConfigService,
-    @inject('ActivityService') activityService: IActivityService
+    @inject('ActivityService') activityService: IActivityService,
+    @inject('LocalizationService') localizationService: ILocalizationService
   ) {
     this._colors = config.colors;
     this._userConfigService = userConfigService;
     this._guildConfigService = guildConfigService;
     this._activityService = activityService;
+    this._localizationService = localizationService;
   }
 
-  public readonly data = <SlashCommandBuilder>new SlashCommandBuilder()
-    .setName('history')
-    .setDescription('Show your activity history')
-    .addUserOption(option =>
-      option
-        .setName('user')
-        .setDescription('User to show the history of')
-        .setRequired(false)
-    )
-    .addBooleanOption(option =>
-      option
-        .setName('show-ids')
-        .setDescription('Show the ids of the activities')
-        .setRequired(false)
-    )
-    .addBooleanOption(option =>
-      option
-        .setName('simple')
-        .setDescription('Display the history in a simple format')
-        .setRequired(false)
-    );
+  public get data() {
+    return <SlashCommandBuilder>new SlashCommandBuilder()
+      .setName('history')
+      .setNameLocalizations(
+        this._localizationService.getAllLocalizations('history.name')
+      )
+      .setDescription('Show your activity history')
+      .setDescriptionLocalizations(
+        this._localizationService.getAllLocalizations('history.description')
+      )
+      .addUserOption(option =>
+        option
+          .setName('user')
+          .setNameLocalizations(
+            this._localizationService.getAllLocalizations('history.user.name')
+          )
+          .setDescription('User to show the history of')
+          .setDescriptionLocalizations(
+            this._localizationService.getAllLocalizations(
+              'history.user.description'
+            )
+          )
+          .setRequired(false)
+      )
+      .addBooleanOption(option =>
+        option
+          .setName('show-ids')
+          .setNameLocalizations(
+            this._localizationService.getAllLocalizations(
+              'history.show-ids.name'
+            )
+          )
+          .setDescription('Show the ids of the activities')
+          .setDescriptionLocalizations(
+            this._localizationService.getAllLocalizations(
+              'history.show-ids.description'
+            )
+          )
+          .setRequired(false)
+      )
+      .addBooleanOption(option =>
+        option
+          .setName('simple')
+          .setNameLocalizations(
+            this._localizationService.getAllLocalizations('history.simple.name')
+          )
+          .setDescription('Display the history in a simple format')
+          .setDescriptionLocalizations(
+            this._localizationService.getAllLocalizations(
+              'history.simple.description'
+            )
+          )
+          .setRequired(false)
+      );
+  }
 
   public async execute(interaction: ChatInputCommandInteraction) {
+    const i18n = this._localizationService.useScope(
+      interaction.locale,
+      'history.messages'
+    );
     const userId =
       interaction.options.getUser('user')?.id ?? interaction.user.id;
     const showIds = interaction.options.getBoolean('show-ids') ?? false;
@@ -73,18 +119,20 @@ export default class HistoryCommand implements ICommand {
     ]);
 
     if (activities.length === 0) {
-      await interaction.reply('No logs found');
+      await interaction.reply(
+        i18n.mustLocalize('no-activities', 'No activities found')
+      );
       return;
     }
 
     const nextButton = new ButtonBuilder()
       .setCustomId('next')
-      .setLabel('Next')
+      .setLabel(i18n.mustLocalize('next', 'Next'))
       .setStyle(ButtonStyle.Primary);
 
     const previousButton = new ButtonBuilder()
       .setCustomId('previous')
-      .setLabel('Previous')
+      .setLabel(i18n.mustLocalize('previous', 'Previous'))
       .setStyle(ButtonStyle.Secondary)
       .setDisabled(true);
 
@@ -100,11 +148,13 @@ export default class HistoryCommand implements ICommand {
 
     let embed = createEmbed.call(
       this,
+      i18n,
       activities.slice(0, pageSize),
       showIds,
       page,
       nPages,
-      timezone
+      timezone,
+      interaction.locale
     );
 
     const response = await interaction.reply({
@@ -144,11 +194,13 @@ export default class HistoryCommand implements ICommand {
 
       embed = createEmbed.call(
         this,
+        i18n,
         activities.slice(startIndex, endIndex),
         showIds,
         page,
         nPages,
-        timezone
+        timezone,
+        interaction.locale
       );
 
       previousButton.setDisabled(page === 0);
@@ -162,13 +214,21 @@ export default class HistoryCommand implements ICommand {
   }
 
   private _createSimpleEmbed(
+    i18n: LocalizationScope,
     activities: IActivity[],
     showIds: boolean,
     page: number,
     nPages: number
   ): EmbedBuilder {
+    const pageString = i18n.mustLocalize(
+      'page-n-of-m',
+      `Page ${page + 1} of ${nPages}`,
+      page + 1,
+      nPages
+    );
+
     const embed = new EmbedBuilder()
-      .setTitle('History')
+      .setTitle(i18n.mustLocalize('history-title', 'History'))
       .setDescription(
         activities
           .map(
@@ -180,7 +240,7 @@ export default class HistoryCommand implements ICommand {
           )
           .join('\n')
       )
-      .setFooter({text: `Page ${page + 1} of ${nPages}`});
+      .setFooter({text: pageString});
 
     embed.setColor(
       page % 2 === 0 ? this._colors.primary : this._colors.secondary
@@ -190,31 +250,48 @@ export default class HistoryCommand implements ICommand {
   }
 
   private _createEmbed(
+    i18n: LocalizationScope,
     activities: IActivity[],
     showIds: boolean,
     page: number,
     nPages: number,
-    timezone: string
+    timezone: string,
+    locale: Locale
   ): EmbedBuilder {
+    const pageString = i18n.mustLocalize(
+      'page-n-of-m',
+      `Page ${page + 1} of ${nPages}`,
+      page + 1,
+      nPages
+    );
+
+    const timezoneShownString = i18n.mustLocalize(
+      'timezone-shown',
+      `Times shown in timezone: ${timezone}`,
+      timezone
+    );
+
     const embed = new EmbedBuilder()
-      .setTitle('History')
+      .setTitle(i18n.mustLocalize('history-title', 'History'))
       .setFields(
         activities.map(activity => ({
-          name: `${activity.date.toLocaleDateString(undefined, {
+          name: `${activity.date.toLocaleDateString(locale, {
             timeZone: timezone,
-          })} ${activity.date.toLocaleTimeString(undefined, {
+          })} ${activity.date.toLocaleTimeString(locale, {
             timeZone: timezone,
           })}`,
-          value: `${activity.name}\n(${
+          value: `${activity.name}\n(${i18n.mustLocalize(
+            'n-minutes',
+            `${activity.roundedDuration ?? activity.duration} minutes`,
             activity.roundedDuration ?? activity.duration
-          } minutes) ${showIds ? `<${activity._id}>` : ''}`,
+          )}) ${showIds ? `<${activity._id}>` : ''}`,
           inline: true,
         }))
       )
-      .setDescription(`Times shown in timezone: ${timezone}`);
+      .setDescription(timezoneShownString);
 
     if (nPages > 1) {
-      embed.setFooter({text: `Page ${page + 1} of ${nPages}`});
+      embed.setFooter({text: pageString});
     }
 
     embed.setColor(

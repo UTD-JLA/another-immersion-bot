@@ -1,4 +1,7 @@
 {
+  "general": {
+    "unexpected-error": "予期せぬエラーが発生しました。もう一度お試しください。"
+  },
   "log": {
     "name": "log",
     "description": "あなたのアクティビティを記録",
@@ -10,7 +13,20 @@
       "duration.name": "時間",
       "duration.description": "動画を視聴した時間を入力してください",
       "date.name": "日付",
-      "date.description": "動画を視聴した日付を入力してください"
+      "date.description": "動画を視聴した日付を入力してください",
+      "messages": {
+        "busy": "現在は取り込み中です。しばらくお待ちください。",
+        "ytdl-fail": "動画の情報を取得できませんでした。URLを確認してください。",
+        "entered-value": "入力された値",
+        "url-time-param": "URLの時間パラメータ",
+        "video-length": "動画の長さ",
+        "activity-logged": "アクティビティを記録しました！",
+        "video-channel": "チャンネル",
+        "video-title": "動画タイトル",
+        "duration": "視聴時間",
+        "auto-tagged": "自動付きタグ",
+        "invalid-date": "入力された日付はただしくありません。"
+      }
     },
     "manual": {
       "name": "手動",
@@ -31,9 +47,14 @@
       "unit.description": "アクティビティの時間単位を入力してください",
       "unit.minute.name": "分",
       "unit.episode.name": "話",
-      "unit.charactor.name": "字",
+      "unit.character.name": "字",
       "tags.name": "タグ",
-      "tags.description": "アクティビティのタグを入力してください"
+      "tags.description": "アクティビティのタグを入力してください",
+      "messages": {
+        "invalid-date": "入力された日付はただしくありません。",
+        "activity-logged": "アクティビティを記録しました！",
+        "timezone-warning": "**＊注意**\n入力された日付は{0}の日付として解析されましたので、このメッセージの最下部に表示されている日付を確認してください。"
+      }
     },
     "anime": {
       "name": "アニメ",
@@ -45,7 +66,16 @@
       "episode-length.name": "一話の長さ",
       "episode-length.description": "一話の長さ(分)を入力してください",
       "date.name": "日付",
-      "date.description": "アニメを視聴した日付を入力してください"
+      "date.description": "アニメを視聴した日付を入力してください",
+      "messages": {
+        "activity-logged": "アクティビティを記録しました！",
+        "invalid-date": "入力された日付はただしくありません。",
+        "anime": "アニメ",
+        "episodes": "話数",
+        "episode-length": "一話の長さ",
+        "duration": "視聴時間",
+        "n-minutes": "{0}分"
+      }
     },
     "vn": {
       "name": "ノベル",
@@ -57,7 +87,225 @@
       "reading-speed.name": "読書速度",
       "reading-speed.description": "読書速度(字/分)を入力してください",
       "date.name": "日付",
-      "date.description": "ノベルを読書した日付を入力してください"
+      "date.description": "ノベルを読書した日付を入力してください",
+      "messages": {
+        "activity-logged": "アクティビティを記録しました！",
+        "invalid-date": "入力された日付はただしくありません。",
+        "vn": "ノベルのタイトル",
+        "characters": "字数",
+        "chars-per-minute": "一分間の文字数",
+        "total-read-time": "読書時間"
+      }
+    },
+    "manga": {
+      "name": "漫画",
+      "description": "漫画の読書した時間をもっと簡単に記録",
+      "name.name": "タイトル",
+      "name.description": "漫画のタイトルを入力してください",
+      "pages.name": "ページ数",
+      "pages.description": "読書したページ数を入力してください",
+      "duration.name": "読書時間",
+      "duration.description": "読書時間(分)を入力してください",
+      "date.name": "日付",
+      "date.description": "漫画を読書した日付を入力してください",
+      "messages": {
+        "activity-logged": "アクティビティを記録しました！",
+        "invalid-date": "入力された日付はただしくありません。",
+        "manga-title": "漫画のタイトル",
+        "pages": "ページ数",
+        "total-read-time": "読書時間",
+        "pages-per-minute": "一分間のページ数",
+        "inferred-pages-per-minute": "一分間のページ数（推定）",
+        "estimated-characters": "推定文字数",
+        "duration-source-default": "読書時間は一定の読書速度から計算されました。間違いがある場合は、`読書時間`という引数を使ってください。",
+        "duration-source-reading-speed-config": "読書時間は設定した読書速度（字/分）から計算されました。間違いがある場合は、`読書時間`という引数を使ってください。",
+        "duration-source-page-speed-config": "読書時間は設定したページ速度（ページ/分）から計算されました。間違いがある場合は、`読書時間`という引数を使ってください。"
+      }
+    }
+  },
+  "undo": {
+    "name": "取り消し",
+    "description": "最後に記録したアクティビティを取り消し",
+    "id.name": "id",
+    "id.description": "取り消したいアクティビティのidを入力してください",
+    "messages": {
+      "activity-not-found": "アクティビティが見つかりませんでした。",
+      "cannot-undo": "このアクティビティは取り消せません。",
+      "no-activity": "与えられたidに対応するアクティビティが見つかりませんでした。",
+      "cancel": "キャンセル",
+      "undo": "取り消し",
+      "undo-title": "取り消し確認",
+      "undo-confirmation": "**“{0}”** を本当に取り消しますか？",
+      "activity-undone": "アクティビティを取り消しました！",
+      "undo-cancelled": "取り消しをキャンセルしました。",
+      "no-response": "返事がおそくなってしまいました。もう一度試してください。"
+    }
+  },
+  "export": {
+    "name": "エクスポート",
+    "description": "アクティビティをエクスポート",
+    "format.name": "フォーマット",
+    "format.description": "エクスポートするフォーマットを選択してください"
+  },
+  "history": {
+    "name": "履歴",
+    "description": "アクティビティの履歴を表示",
+    "user.name": "ユーザー",
+    "user.description": "アクティビティを表示したいユーザーのidを入力してください",
+    "simple.name": "簡易表示",
+    "simple.description": "簡易表示を有効にする",
+    "show-ids.name": "id表示",
+    "show-ids.description": "アクティビティのidを表示する",
+    "messages": {
+      "history-title": "履歴",
+      "no-activities": "アクティビティが見つかりませんでした。",
+      "next": "次へ",
+      "previous": "前へ",
+      "page-n-of-m": "{1} ページ中 {0} ページ目",
+      "timezone-shown": "表示されている時間は{0}です。",
+      "n-minutes": "{0}分"
+    }
+  },
+  "leaderboard": {
+    "name": "ランキング",
+    "description": "アクティビティのランキングを表示",
+    "user.name": "ユーザー",
+    "user.description": "ランキングを表示したいユーザーのidを入力してください",
+    "type.name": "タイプ",
+    "type.description": "ランキングを表示したいアクティビティのタイプを入力してください",
+    "type.reading.name": "読書",
+    "type.listening.name": "視聴",
+    "timeframe.name": "期間",
+    "timeframe.description": "ランキングを表示したい期間を入力してください",
+    "timeframe.today.name": "今日",
+    "timeframe.this-week.name": "今週",
+    "timeframe.this-month.name": "今月",
+    "timeframe.this-year.name": "今年",
+    "messages": {
+      "no-results": "ランキングが見つかりませんでした。",
+      "top-ten": "トップ10ユーザー",
+      "top-ten-reading": "トップ10ユーザー・読書",
+      "top-ten-listening": "トップ10ユーザー・視聴",
+      "leaderboard-title": "ランキング",
+      "duration-days": "{0}日{1}時間{2}分",
+      "duration-hours": "{0}時間{1}分",
+      "duration-minutes": "{0}分"
+    }
+  },
+  "config": {
+    "name": "設定",
+    "description": "ギルドの設定の管理",
+    "set.name": "変更",
+    "set.description": "設定を変更",
+    "set.timezone.name": "タイムゾーン",
+    "set.timezone.description": "ギルドのタイムゾーンを変更",
+    "set.messages": {
+      "no-changes": "設定は変更されませんでした。",
+      "config-updated": "設定を変更しました。"
+    },
+    "get.name": "表示",
+    "get.description": "設定を表示"
+  },
+  "user-config": {
+    "name": "ユーザー設定",
+    "description": "ユーザーの設定の管理",
+    "show": {
+      "name": "表示",
+      "description": "ユーザーの設定を表示",
+      "messages": {
+        "user-config-title": "ユーザー設定",
+        "timezone": "タイムゾーン",
+        "daily-goal": "日目標",
+        "reading-speed": "読書速度",
+        "reading-speed-pages": "読書速度(ページ/分)",
+        "not-set": "未設定"
+      }
+    },
+    "set": {
+      "name": "変更",
+      "description": "ユーザーの設定を変更",
+      "timezone": {
+        "name": "タイムゾーン",
+        "description": "ユーザーのタイムゾーンを変更",
+        "timezone": {
+          "name": "タイムゾーン",
+          "description": "タイムゾーンを入力してください"
+        }
+      },
+      "reading-speed": {
+        "name": "読書速度",
+        "description": "ユーザーの読書速度を変更",
+        "reading-speed": {
+          "name": "読書速度",
+          "description": "読書速度(字数/分)を入力してください"
+        },
+        "manga-page-speed": {
+          "name": "マンガページ速度",
+          "description": "ユーザーのマンガページ速度を変更",
+          "manga-page-speed": {
+            "name": "マンガページ速度",
+            "description": "マンガページ速度(ページ/分)を入力してください"
+          }
+        }
+      },
+      "daily-goal": {
+        "name": "日課",
+        "description": "ユーザーの日課を変更",
+        "daily-goal": {
+          "name": "日課",
+          "description": "日課(分)を入力してください"
+        }
+      },
+      "messages": {
+        "invalid-timezone": "タイムゾーンが無効です。",
+        "timezone-set": "タイムゾーンを{0}に変更しました。",
+        "new-reading-speed": "新しい読書速度",
+        "new-pages-speed": "新しいマンガページ速度",
+        "no-arguments": "ユーザーの設定を変更するには、少なくとも1つの引数が必要です。",
+        "reading-speed-set": "読書速度を変更しました",
+        "daily-goal-set": "日課を変更しました"
+      }
+    },
+    "autocomplete": {
+      "predicted-speed-value": "推定値"
+    }
+  },
+  "chart": {
+    "name": "グラフ",
+    "description": "アクティビティのグラフを表示",
+    "weekly.name": "週間",
+    "weekly.description": "週間のグラフを表示",
+    "monthly.name": "月間",
+    "monthly.description": "月間のグラフを表示",
+    "yearly.name": "年間",
+    "yearly.description": "年間のグラフを表示",
+    "custom.name": "カスタム",
+    "custom.description": "カスタムのグラフを表示",
+    "custom.beginning.name": "グラフの開始日",
+    "custom.beginning.description": "グラフの開始日を入力してください",
+    "custom.end.name": "グラフの終了日",
+    "custom.end.description": "グラフの終了日を入力してください",
+    "messages": {
+      "invalid-date": "{0}は無効な日付です。",
+      "cannot-be-more-than-n-years-in-the-past": "開始日は{0}年以上過去に設定できません。",
+      "cannot-be-in-the-future": "終了日は未来に設定できません。",
+      "custom-span-footer": "各棒は{0}日を表します",
+      "weekly-span-footer": "各棒は一週間を表します",
+      "monthly-span-footer": "各棒は一ヶ月を表します",
+      "yearly-span-footer": "各棒は一年を表します",
+      "custom-span-description": "{0}日のグラフと統計を表示しています。",
+      "weekly-span-description": "一週間のグラフと統計を表示しています。",
+      "monthly-span-description": "一ヶ月のグラフと統計を表示しています。",
+      "yearly-span-description": "一年のグラフと統計を表示しています。",
+      "custom-span-title": "カスタムグラフ",
+      "weekly-span-title": "週間グラフ",
+      "monthly-span-title": "月間グラフ",
+      "yearly-span-title": "年間グラフ",
+      "total-minutes": "総計時間",
+      "average-time": "平均時間",
+      "peak-time": "ピーク時間",
+      "n-minutes": "{0}分",
+      "n-minutes-on-date": "{0}分 ({1} UTC)"
     }
   }
 }

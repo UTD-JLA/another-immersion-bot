@@ -1,7 +1,7 @@
 import {Client, Interaction} from 'discord.js';
 import {ICommand} from './commands';
 import {Container} from 'inversify';
-import {ILoggerService} from './services';
+import {ILocalizationService, ILoggerService} from './services';
 
 declare module 'discord.js' {
   interface Client {
@@ -14,7 +14,14 @@ export async function onInteractionCreate(
 ): Promise<void> {
   const logger =
     interaction.client.container.get<ILoggerService>('LoggerService');
+  const localizationService =
+    interaction.client.container.get<ILocalizationService>(
+      'LocalizationService'
+    );
   const commands = interaction.client.container.getAll<ICommand>('Command');
+  const errorMessage = localizationService.localize(
+    `${interaction.locale}.general.unexpected-error`
+  );
 
   if (interaction.isChatInputCommand()) {
     const command = commands.find(
@@ -33,12 +40,14 @@ export async function onInteractionCreate(
       logger.error(String(error), {error});
       if (interaction.replied || interaction.deferred)
         await interaction.followUp({
-          content: 'There was an error while executing this command!',
+          content:
+            errorMessage ?? 'There was an error while executing this command!',
           ephemeral: true,
         });
       else
         await interaction.reply({
-          content: 'There was an error while executing this command!',
+          content:
+            errorMessage ?? 'There was an error while executing this command!',
           ephemeral: true,
         });
     }

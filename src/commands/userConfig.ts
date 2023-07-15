@@ -6,7 +6,11 @@ import {
   EmbedBuilder,
 } from 'discord.js';
 import {injectable, inject} from 'inversify';
-import {IUserConfigService, IUserSpeedService} from '../services';
+import {
+  ILocalizationService,
+  IUserConfigService,
+  IUserSpeedService,
+} from '../services';
 import {IConfig} from '../config';
 import {validateTimezone} from '../util/validation';
 import {ActivityUnit} from '../models/activity';
@@ -20,68 +24,170 @@ export default class UserConfigCommand implements ICommand {
     @inject('Config')
     private readonly _config: IConfig,
     @inject('UserSpeedService')
-    private readonly _userSpeedService: IUserSpeedService
+    private readonly _userSpeedService: IUserSpeedService,
+    @inject('LocalizationService')
+    private readonly _localizationService: ILocalizationService
   ) {}
 
-  public readonly data = <SlashCommandBuilder>new SlashCommandBuilder()
-    .setName('user-config')
-    .setDescription('Update your user experience')
-    .addSubcommand(group =>
-      group.setName('show').setDescription('Get your current user config')
-    )
-    .addSubcommandGroup(group =>
-      group
-        .setName('set')
-        .setDescription('Set your user config')
-        .addSubcommand(subcommand =>
-          subcommand
-            .setName('timezone')
-            .setDescription('Set your timezone')
-            .addStringOption(option =>
-              option
-                .setName('timezone')
-                .setDescription('Your timezone')
-                .setRequired(true)
-                .setAutocomplete(true)
+  public get data() {
+    return new SlashCommandBuilder()
+      .setName('user-config')
+      .setNameLocalizations(
+        this._localizationService.getAllLocalizations('user-config.name')
+      )
+      .setDescription('Update your user experience')
+      .setDescriptionLocalizations(
+        this._localizationService.getAllLocalizations('user-config.description')
+      )
+      .addSubcommand(group =>
+        group
+          .setName('show')
+          .setNameLocalizations(
+            this._localizationService.getAllLocalizations(
+              'user-config.show.name'
             )
-        )
-        .addSubcommand(subcommand =>
-          subcommand
-            .setName('reading-speed')
-            .setDescription('Set your reading speed')
-            .addNumberOption(option =>
-              option
-                .setName('reading-speed')
-                .setDescription('Your reading speed')
-                .setRequired(false)
-                .setMinValue(0)
-                .setMaxValue(1000)
-                .setAutocomplete(true)
+          )
+          .setDescription('Get your current user config')
+          .setDescriptionLocalizations(
+            this._localizationService.getAllLocalizations(
+              'user-config.show.description'
             )
-            .addNumberOption(option =>
-              option
-                .setName('manga-page-speed')
-                .setDescription('Your manga page speed')
-                .setRequired(false)
-                .setMinValue(0)
-                .setMaxValue(20)
-                .setAutocomplete(true)
+          )
+      )
+      .addSubcommandGroup(group =>
+        group
+          .setName('set')
+          .setNameLocalizations(
+            this._localizationService.getAllLocalizations(
+              'user-config.set.name'
             )
-        )
-        .addSubcommand(subcommand =>
-          subcommand
-            .setName('daily-goal')
-            .setDescription('Set your daily goal')
-            .addIntegerOption(option =>
-              option
-                .setName('daily-goal')
-                .setDescription('Your daily goal')
-                .setRequired(true)
-                .setMinValue(0)
-                .setMaxValue(1440)
+          )
+          .setDescription('Set your user config')
+          .setDescriptionLocalizations(
+            this._localizationService.getAllLocalizations(
+              'user-config.set.description'
             )
-        )
-    );
+          )
+          .addSubcommand(subcommand =>
+            subcommand
+              .setName('timezone')
+              .setNameLocalizations(
+                this._localizationService.getAllLocalizations(
+                  'user-config.set.timezone.name'
+                )
+              )
+              .setDescription('Set your timezone')
+              .setDescriptionLocalizations(
+                this._localizationService.getAllLocalizations(
+                  'user-config.set.timezone.description'
+                )
+              )
+              .addStringOption(option =>
+                option
+                  .setName('timezone')
+                  .setNameLocalizations(
+                    this._localizationService.getAllLocalizations(
+                      'user-config.set.timezone.timezone.name'
+                    )
+                  )
+                  .setDescription('Your timezone')
+                  .setDescriptionLocalizations(
+                    this._localizationService.getAllLocalizations(
+                      'user-config.set.timezone.timezone.description'
+                    )
+                  )
+                  .setRequired(true)
+                  .setAutocomplete(true)
+              )
+          )
+          .addSubcommand(subcommand =>
+            subcommand
+              .setName('reading-speed')
+              .setNameLocalizations(
+                this._localizationService.getAllLocalizations(
+                  'user-config.set.reading-speed.name'
+                )
+              )
+              .setDescription('Set your reading speed')
+              .setDescriptionLocalizations(
+                this._localizationService.getAllLocalizations(
+                  'user-config.set.reading-speed.description'
+                )
+              )
+              .addNumberOption(option =>
+                option
+                  .setName('reading-speed')
+                  .setNameLocalizations(
+                    this._localizationService.getAllLocalizations(
+                      'user-config.set.reading-speed.reading-speed.name'
+                    )
+                  )
+                  .setDescription('Your reading speed')
+                  .setDescriptionLocalizations(
+                    this._localizationService.getAllLocalizations(
+                      'user-config.set.reading-speed.reading-speed.description'
+                    )
+                  )
+                  .setRequired(false)
+                  .setMinValue(0)
+                  .setMaxValue(1000)
+                  .setAutocomplete(true)
+              )
+              .addNumberOption(option =>
+                option
+                  .setName('manga-page-speed')
+                  .setNameLocalizations(
+                    this._localizationService.getAllLocalizations(
+                      'user-config.set.reading-speed.manga-page-speed.name'
+                    )
+                  )
+                  .setDescription('Your manga page speed')
+                  .setDescriptionLocalizations(
+                    this._localizationService.getAllLocalizations(
+                      'user-config.set.reading-speed.manga-page-speed.description'
+                    )
+                  )
+                  .setRequired(false)
+                  .setMinValue(0)
+                  .setMaxValue(20)
+                  .setAutocomplete(true)
+              )
+          )
+          .addSubcommand(subcommand =>
+            subcommand
+              .setName('daily-goal')
+              .setNameLocalizations(
+                this._localizationService.getAllLocalizations(
+                  'user-config.set.daily-goal.name'
+                )
+              )
+              .setDescription('Set your daily goal')
+              .setDescriptionLocalizations(
+                this._localizationService.getAllLocalizations(
+                  'user-config.set.daily-goal.description'
+                )
+              )
+              .addIntegerOption(option =>
+                option
+                  .setName('daily-goal')
+                  .setNameLocalizations(
+                    this._localizationService.getAllLocalizations(
+                      'user-config.set.daily-goal.daily-goal.name'
+                    )
+                  )
+                  .setDescription('Your daily goal')
+                  .setDescriptionLocalizations(
+                    this._localizationService.getAllLocalizations(
+                      'user-config.set.daily-goal.daily-goal.description'
+                    )
+                  )
+                  .setRequired(true)
+                  .setMinValue(0)
+                  .setMaxValue(1440)
+              )
+          )
+      ) as SlashCommandBuilder;
+  }
 
   public async execute(interaction: ChatInputCommandInteraction) {
     const group = interaction.options.getSubcommandGroup(false);
@@ -100,6 +206,11 @@ export default class UserConfigCommand implements ICommand {
   }
 
   private async _executeGetAll(interaction: ChatInputCommandInteraction) {
+    const i18n = this._localizationService.useScope(
+      interaction.locale,
+      'user-config.show.messages'
+    );
+
     await interaction.deferReply({ephemeral: true});
 
     const config = await this._userConfigService.getUserConfig(
@@ -107,7 +218,7 @@ export default class UserConfigCommand implements ICommand {
     );
 
     const embed = new EmbedBuilder()
-      .setTitle('User Config')
+      .setTitle(i18n.mustLocalize('user-config-title', 'User Config'))
       .setAuthor({
         name: interaction.user.username,
         iconURL: interaction.user.avatarURL()!,
@@ -115,24 +226,26 @@ export default class UserConfigCommand implements ICommand {
       .setColor(this._config.colors.info)
       .addFields([
         {
-          name: 'Timezone',
-          value: config.timezone ?? 'Not set',
-          inline: true,
+          name: i18n.mustLocalize('timezone', 'Timezone'),
+          value: config.timezone ?? i18n.mustLocalize('not-set', 'Not set'),
         },
         {
-          name: 'Daily Goal',
-          value: config.dailyGoal?.toString() ?? 'Not set',
-          inline: true,
+          name: i18n.mustLocalize('daily-goal', 'Daily Goal'),
+          value:
+            config.dailyGoal?.toString() ??
+            i18n.mustLocalize('not-set', 'Not set'),
         },
         {
-          name: 'Reading Speed',
-          value: config.readingSpeed?.toPrecision(3) ?? 'Not set',
-          inline: true,
+          name: i18n.mustLocalize('reading-speed', 'Reading Speed'),
+          value:
+            config.readingSpeed?.toPrecision(3) ??
+            i18n.mustLocalize('not-set', 'Not set'),
         },
         {
-          name: 'Manga Page Speed',
-          value: config.readingSpeedPages?.toPrecision(3) ?? 'Not set',
-          inline: true,
+          name: i18n.mustLocalize('reading-speed-pages', 'Reading Speed Pages'),
+          value:
+            config.readingSpeedPages?.toPrecision(3) ??
+            i18n.mustLocalize('not-set', 'Not set'),
         },
       ]);
 
@@ -141,6 +254,10 @@ export default class UserConfigCommand implements ICommand {
 
   private async _executeSet(interaction: ChatInputCommandInteraction) {
     const subcommand = interaction.options.getSubcommand(true);
+    const i18n = this._localizationService.useScope(
+      interaction.locale,
+      'user-config.set.messages'
+    );
 
     if (subcommand === 'timezone') {
       const timezone = interaction.options.getString('timezone', true);
@@ -148,7 +265,7 @@ export default class UserConfigCommand implements ICommand {
       const isValidTimezone = validateTimezone(timezone);
       if (!isValidTimezone) {
         await interaction.reply({
-          content: 'Invalid timezone',
+          content: i18n.mustLocalize('invalid-timezone', 'Invalid timezone'),
           ephemeral: true,
         });
         return;
@@ -157,7 +274,11 @@ export default class UserConfigCommand implements ICommand {
       await this._userConfigService.setTimezone(interaction.user.id, timezone);
 
       await interaction.reply({
-        content: `Set your timezone to ${timezone}`,
+        content: i18n.mustLocalize(
+          'timezone-set',
+          `Timezone set to ${timezone}`,
+          timezone
+        ),
         ephemeral: true,
       });
     } else if (subcommand === 'reading-speed') {
@@ -187,19 +308,19 @@ export default class UserConfigCommand implements ICommand {
 
       if (readingSpeed)
         fields.push({
-          name: 'New Reading Speed',
+          name: i18n.mustLocalize('new-reading-speed', 'New Reading Speed'),
           value: readingSpeed.toString(),
         });
 
       if (mangaSpeed)
         fields.push({
-          name: 'New Manga Page Speed',
+          name: i18n.mustLocalize('new-pages-speed', 'New Pages Speed'),
           value: mangaSpeed.toString(),
         });
 
       if (fields.length === 0) {
         await interaction.reply({
-          content: 'You must provide at least one option',
+          content: i18n.mustLocalize('no-arguments', 'No arguments provided'),
           ephemeral: true,
         });
         return;
@@ -207,7 +328,7 @@ export default class UserConfigCommand implements ICommand {
 
       const embed = new EmbedBuilder()
         .setColor(this._config.colors.info)
-        .setTitle('Reading Speed')
+        .setTitle(i18n.mustLocalize('reading-speed-set', 'Reading Speed Set'))
         .setAuthor({
           name: interaction.user.username,
           iconURL: interaction.user.avatarURL()!,
@@ -224,7 +345,11 @@ export default class UserConfigCommand implements ICommand {
       );
 
       await interaction.reply({
-        content: `Set your daily goal to ${dailyGoal}`,
+        content: i18n.mustLocalize(
+          'daily-goal-set',
+          `Daily goal set to ${dailyGoal}`,
+          dailyGoal.toString()
+        ),
         ephemeral: true,
       });
     }
@@ -233,6 +358,11 @@ export default class UserConfigCommand implements ICommand {
   public async autocomplete(
     interaction: AutocompleteInteraction
   ): Promise<void> {
+    const i18n = this._localizationService.useScope(
+      interaction.locale,
+      'user-config.autocomplete'
+    );
+
     const group = interaction.options.getSubcommandGroup(false);
 
     if (!group || group !== 'set') {
@@ -258,9 +388,14 @@ export default class UserConfigCommand implements ICommand {
         return interaction.respond([]);
       }
 
+      const predictedValueString = i18n.mustLocalize(
+        'predicted-speed-value',
+        'Predicted value'
+      );
+
       interaction.respond([
         {
-          name: `Predicted value: ${predictedSpeed.toPrecision(
+          name: `${predictedValueString}: ${predictedSpeed.toPrecision(
             3
           )} ${unitChar}pm`,
           value: predictedSpeed,

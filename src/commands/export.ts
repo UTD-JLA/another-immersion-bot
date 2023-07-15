@@ -6,35 +6,53 @@ import {
 } from 'discord.js';
 import {inject, injectable} from 'inversify';
 import {IActivity} from '../models/activity';
-import {IActivityService} from '../services/interfaces';
+import {IActivityService, ILocalizationService} from '../services/interfaces';
 import {stringify} from 'csv-string';
 
 @injectable()
 export default class ExportCommand implements ICommand {
   constructor(
     @inject('ActivityService')
-    private readonly activityService: IActivityService
+    private readonly activityService: IActivityService,
+    @inject('LocalizationService')
+    private readonly localizationService: ILocalizationService
   ) {}
 
-  public readonly data = <SlashCommandBuilder>new SlashCommandBuilder()
-    .setName('export')
-    .setDescription('Export command')
-    .addStringOption(option =>
-      option
-        .setName('format')
-        .setDescription('Format to export to')
-        .setRequired(true)
-        .addChoices(
-          {
-            name: 'JSON',
-            value: 'json',
-          },
-          {
-            name: 'CSV',
-            value: 'csv',
-          }
-        )
-    );
+  public get data() {
+    return new SlashCommandBuilder()
+      .setName('export')
+      .setNameLocalizations(
+        this.localizationService.getAllLocalizations('export.name')
+      )
+      .setDescription('Export command')
+      .setDescriptionLocalizations(
+        this.localizationService.getAllLocalizations('export.description')
+      )
+      .addStringOption(option =>
+        option
+          .setName('format')
+          .setNameLocalizations(
+            this.localizationService.getAllLocalizations('export.format.name')
+          )
+          .setDescription('Format to export to')
+          .setDescriptionLocalizations(
+            this.localizationService.getAllLocalizations(
+              'export.format.description'
+            )
+          )
+          .setRequired(true)
+          .addChoices(
+            {
+              name: 'JSON',
+              value: 'json',
+            },
+            {
+              name: 'CSV',
+              value: 'csv',
+            }
+          )
+      ) as SlashCommandBuilder;
+  }
 
   private static _getLine(format: 'json' | 'csv', activity: IActivity): string {
     switch (format) {
@@ -80,7 +98,9 @@ export default class ExportCommand implements ICommand {
       .join('');
     const fileBuffer = Buffer.from(fileContent, 'utf8');
     const attachment = new AttachmentBuilder(fileBuffer).setName(
-      `export.${format}`
+      `${new Date(interaction.createdTimestamp).toUTCString()}-${
+        interaction.user.id
+      }-export.${format}`
     );
 
     await interaction.reply({

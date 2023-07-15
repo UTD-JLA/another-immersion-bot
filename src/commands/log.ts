@@ -191,10 +191,14 @@ export default class LogCommand implements ICommand {
   private async _executeVideo(
     interaction: ChatInputCommandInteraction
   ): Promise<void> {
+    const i18n = this._localizationService.useScope(
+      interaction.locale,
+      'log.video.messages'
+    );
+
     await interaction.deferReply();
 
     const url = interaction.options.getString('url', true);
-    const urlComponents = new URL(url);
 
     const enteredDate = interaction.options.getString('date', false);
     const date = enteredDate
@@ -226,7 +230,8 @@ export default class LogCommand implements ICommand {
       );
     } catch (error) {
       await interaction.editReply({
-        content: "I'm busy right now, please try again later",
+        content:
+          i18n.localize('busy') ?? "I'm busy right now, please try again later",
       });
       // IMPORTANT: do not continue unless we have the lock
       return;
@@ -235,10 +240,11 @@ export default class LogCommand implements ICommand {
     // Attempt to call yt-dlp to extract info about the user-specified url
     let vidInfo: VideoURLExtractedInfo | undefined;
     try {
+      const urlComponents = new URL(url);
       vidInfo = await this._extractVideoInfo(urlComponents);
     } catch (error) {
       await interaction.editReply({
-        content: 'Invalid or unsupported URL',
+        content: i18n.localize('ytdl-fail') ?? 'Failed to get video info',
       });
     } finally {
       release();
@@ -255,14 +261,14 @@ export default class LogCommand implements ICommand {
       enteredDuration ?? (vidInfo.seekTime ?? vidInfo.duration) / 60;
 
     const timeIsFrom = enteredDuration
-      ? 'from entered value'
+      ? i18n.localize('entered-value') ?? 'entered value'
       : vidInfo.seekTime
-      ? 'from url'
-      : 'from video length';
+      ? i18n.localize('url-time-param') ?? 'time parameter in url'
+      : i18n.localize('video-length') ?? 'video length';
 
     const activity = await this._activityService.createActivity({
       name: vidInfo.title,
-      url: urlComponents.toString(),
+      url: url,
       duration,
       tags: [
         'video',
@@ -276,22 +282,22 @@ export default class LogCommand implements ICommand {
     });
 
     const embed = new EmbedBuilder()
-      .setTitle('Activity logged!')
+      .setTitle(i18n.mustLocalize('activity-logged', 'Activity Logged!'))
       .setFields(
         {
-          name: 'Channel',
+          name: i18n.mustLocalize('video-channel', 'Channel'),
           value: vidInfo.uploaderName,
         },
         {
-          name: 'Video',
+          name: i18n.mustLocalize('video-title', 'Video'),
           value: vidInfo.title,
         },
         {
-          name: 'Watch Time',
+          name: i18n.mustLocalize('duration', 'Duration'),
           value: activity.formattedDuration! + ` (${timeIsFrom})`,
         },
         {
-          name: 'Auto-Tagged',
+          name: i18n.mustLocalize('auto-tagged', 'Auto-tagged'),
           value: activity.tags?.join('\n') ?? 'None',
         }
       )
@@ -308,6 +314,11 @@ export default class LogCommand implements ICommand {
   private async _executeAnime(
     interaction: ChatInputCommandInteraction
   ): Promise<void> {
+    const i18n = this._localizationService.useScope(
+      interaction.locale,
+      'log.anime.messages'
+    );
+
     await interaction.deferReply();
 
     const nameOrSuggestion = interaction.options.getString('anime-name', true);
@@ -333,7 +344,7 @@ export default class LogCommand implements ICommand {
 
     if (!date) {
       await interaction.editReply({
-        content: 'Invalid date',
+        content: i18n.mustLocalize('invalid-date', 'Invalid date'),
       });
       return;
     }
@@ -353,22 +364,26 @@ export default class LogCommand implements ICommand {
     });
 
     const embed = new EmbedBuilder()
-      .setTitle('Activity logged!')
+      .setTitle(i18n.mustLocalize('activity-logged', 'Activity Logged!'))
       .setFields(
         {
-          name: 'Anime',
+          name: i18n.mustLocalize('anime', 'Anime'),
           value: name,
         },
         {
-          name: 'Episodes',
+          name: i18n.mustLocalize('episodes', 'Episodes'),
           value: episode.toString(),
         },
         {
-          name: 'Episode Length',
-          value: `${episodeLength} minutes`,
+          name: i18n.mustLocalize('episode-length', 'Episode Length'),
+          value: i18n.mustLocalize(
+            'n-minutes',
+            `${episodeLength} minutes`,
+            episodeLength
+          ),
         },
         {
-          name: 'Total Watch Time',
+          name: i18n.mustLocalize('duration', 'Duration'),
           value: activity.formattedDuration!,
         }
       )
@@ -384,6 +399,11 @@ export default class LogCommand implements ICommand {
   private async _executeVN(
     interaction: ChatInputCommandInteraction
   ): Promise<void> {
+    const i18n = this._localizationService.useScope(
+      interaction.locale,
+      'log.vn.messages'
+    );
+
     await interaction.deferReply();
 
     const nameOrSuggestion = interaction.options.getString('vn-name', true);
@@ -416,7 +436,7 @@ export default class LogCommand implements ICommand {
 
     if (!date) {
       await interaction.editReply({
-        content: 'Invalid date',
+        content: i18n.mustLocalize('invalid-date', 'Invalid date'),
       });
       return;
     }
@@ -441,22 +461,22 @@ export default class LogCommand implements ICommand {
     const activity = await this._activityService.createActivity(newActivity);
 
     const embed = new EmbedBuilder()
-      .setTitle('Activity logged!')
+      .setTitle(i18n.mustLocalize('activity-logged', 'Activity Logged!'))
       .setFields(
         {
-          name: 'VN',
+          name: i18n.mustLocalize('vn', 'Visual Novel'),
           value: name,
         },
         {
-          name: 'Characters',
+          name: i18n.mustLocalize('characters', 'Characters'),
           value: charCount.toString(),
         },
         {
-          name: 'Characters Per Minute',
+          name: i18n.mustLocalize('chars-per-minute', 'Characters Per Minute'),
           value: charPerMinute.toString(),
         },
         {
-          name: 'Total Read Time',
+          name: i18n.mustLocalize('total-read-time', 'Total Read Time'),
           value: activity.formattedDuration!,
         }
       )
@@ -470,6 +490,11 @@ export default class LogCommand implements ICommand {
   }
 
   private async _executeManga(interaction: ChatInputCommandInteraction) {
+    const i18n = this._localizationService.useScope(
+      interaction.locale,
+      'log.manga.messages'
+    );
+
     await interaction.deferReply();
     // Note: should not have X-name format because there is no manga data
     // using non-scoped data is fine for now
@@ -483,7 +508,11 @@ export default class LogCommand implements ICommand {
 
     let pagesPerMinute: number;
     let finalDuration: number;
-    let durationSource: string | undefined;
+    let durationSource:
+      | 'page-speed-config'
+      | 'reading-speed-config'
+      | 'default'
+      | undefined;
     let charStats:
       | {
           value: number;
@@ -501,7 +530,7 @@ export default class LogCommand implements ICommand {
       if (pageReadingSpeed) {
         pagesPerMinute = pageReadingSpeed;
         finalDuration = pages / pagesPerMinute;
-        durationSource = 'your configured page speed';
+        durationSource = 'page-speed-config';
 
         const estimatedChars = await this._userSpeedService.convertUnit(
           interaction.user.id,
@@ -531,9 +560,7 @@ export default class LogCommand implements ICommand {
           LogCommand.BASE_CHARS_PER_PAGE;
 
         finalDuration = pages / pagesPerMinute;
-        durationSource = charsPerMinute
-          ? `your configured reading speed (assuming ${LogCommand.BASE_CHARS_PER_PAGE} chars/page)`
-          : 'the default page speed';
+        durationSource = charsPerMinute ? 'reading-speed-config' : 'default';
       }
     }
 
@@ -551,7 +578,7 @@ export default class LogCommand implements ICommand {
 
     if (!date) {
       await interaction.editReply({
-        content: 'Invalid date',
+        content: i18n.mustLocalize('invalid-date', 'Invalid date'),
       });
       return;
     }
@@ -575,23 +602,33 @@ export default class LogCommand implements ICommand {
 
     const activity = await this._activityService.createActivity(newActivity);
 
+    const inferredPpmMessage = i18n.mustLocalize(
+      'inferred-pages-per-minute',
+      'Inferred Pages Per Minute'
+    );
+
+    const ppmMessage = i18n.mustLocalize(
+      'pages-per-minute',
+      'Pages Per Minute'
+    );
+
     const embed = new EmbedBuilder()
-      .setTitle('Activity logged!')
+      .setTitle(i18n.mustLocalize('activity-logged', 'Activity Logged!'))
       .setFields(
         {
-          name: 'Manga',
+          name: i18n.mustLocalize('manga-title', 'Manga'),
           value: name,
         },
         {
-          name: 'Pages',
+          name: i18n.mustLocalize('pages', 'Pages'),
           value: pages.toString(),
         },
         {
-          name: 'Total Read Time',
+          name: i18n.mustLocalize('total-read-time', 'Total Read Time'),
           value: activity.formattedDuration!,
         },
         {
-          name: `${duration ? '' : 'Inferred '}Pages Per Minute`,
+          name: duration ? ppmMessage : inferredPpmMessage,
           value: pagesPerMinute.toPrecision(3).toString(),
         }
       )
@@ -600,8 +637,13 @@ export default class LogCommand implements ICommand {
       .setColor(this._config.colors.success);
 
     if (charStats) {
+      const estimatedCharsMessage = i18n.mustLocalize(
+        'estimated-characters',
+        'Estimated Characters'
+      );
+
       embed.addFields({
-        name: 'Estimated Characters',
+        name: estimatedCharsMessage,
         value: `${Math.round(charStats.value)} (${Math.round(
           charStats.atSpeed
         )} ecpm)`,
@@ -609,12 +651,22 @@ export default class LogCommand implements ICommand {
     }
 
     if (durationSource) {
-      embed.setDescription(
-        'Duration was not provided, so it was inferred from ' +
-          durationSource +
-          '. ' +
-          'If you want to provide a duration, use the `duration` option.'
+      const localizationKey = `duration-source-${durationSource}`;
+      const sourceReadble =
+        durationSource === 'default'
+          ? 'the default reading speed'
+          : durationSource === 'page-speed-config'
+          ? 'your page reading speed'
+          : 'your reading speed';
+
+      const defaultMessage = `Duration was not provided, so it was inferred from ${sourceReadble}. If you want to provide a duration, use the \`duration\` option.`;
+
+      const durationNotProvidedMessage = i18n.mustLocalize(
+        localizationKey,
+        defaultMessage
       );
+
+      embed.setDescription(durationNotProvidedMessage);
     }
 
     await interaction.editReply({
@@ -636,6 +688,11 @@ export default class LogCommand implements ICommand {
     if (interaction.options.getSubcommand() !== 'manual') {
       throw new Error('Subcommand not implemented');
     }
+
+    const i18n = this._localizationService.useScope(
+      interaction.locale,
+      'log.manual.messages'
+    );
 
     // manual entry
     const type = interaction.options.getString('type', true);
@@ -673,7 +730,7 @@ export default class LogCommand implements ICommand {
 
     if (!date) {
       await interaction.editReply({
-        content: 'Invalid date',
+        content: i18n.mustLocalize('invalid-date', 'Invalid date'),
       });
       return;
     }
@@ -709,19 +766,26 @@ export default class LogCommand implements ICommand {
     });
 
     const embed = new EmbedBuilder()
-      .setTitle('Activity logged!')
+      .setTitle(i18n.mustLocalize('activity-logged', 'Activity Logged!'))
       .setFooter({text: `ID: ${activity._id}`})
       .setTimestamp(activity.date)
       .setColor(this._config.colors.success);
 
     if (timezone) {
+      const warningMessage = i18n.localize(
+        'timezone-warning',
+        timezone,
+        date.toISOString()
+      );
+
       embed.setDescription(
-        `Note: date was parsed as __${date.toISOString()}__\n` +
-          ' **You should see the correct localized time at the bottom of this message.**\n' +
-          ` The timezone used was **${timezone}**. Check your user configuration to change this.\n` +
-          ' Use /undo to remove this activity if it is incorrect and try again.\n' +
-          ' For example: use "yesterday 8pm jst" instead of "yesterday 8pm".' +
-          ' Also consider setting your timezone or changing the guild timezone if you are an admin.'
+        warningMessage ??
+          `Note: date was parsed as __${date.toISOString()}__\n` +
+            ' **You should see the correct localized time at the bottom of this message.**\n' +
+            ` The timezone used was **${timezone}**. Check your user configuration to change this.\n` +
+            ' Use /undo to remove this activity if it is incorrect and try again.\n' +
+            ' For example: use "yesterday 8pm jst" instead of "yesterday 8pm".' +
+            ' Also consider setting your timezone or changing the guild timezone if you are an admin.'
       );
     }
 
