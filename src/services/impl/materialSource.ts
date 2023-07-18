@@ -10,6 +10,7 @@ import {IConfig} from '../../config';
 import {readFile, readdir} from 'fs';
 import {createHash} from 'crypto';
 import {promisify} from 'util';
+import {isValidObjectId} from 'mongoose';
 
 const readFileAsync = promisify(readFile);
 const readdirAsync = promisify(readdir);
@@ -35,9 +36,50 @@ export default class MaterialSourceService implements IMaterialSourceService {
     this._logger = logger;
   }
 
+  public validateId = (id: string): boolean => isValidObjectId(id);
+
+  public async search(
+    query: string,
+    limit: number,
+    scope?: string
+  ): Promise<{id: string; text: string}[]> {
+    const typeFilter = scope ? {type: scope} : {};
+
+    return Material.find({
+      ...typeFilter,
+      $text: {$search: query},
+    })
+      .sort({score: {$meta: 'textScore'}})
+      .limit(limit)
+      .exec()
+      .then(materials =>
+        materials.map(material => ({
+          id: material._id!.toString(),
+          text: material.title,
+        }))
+      );
+  }
+
+  public async getMaterial(id: string): Promise<{id: string; text: string}> {
+    const material = await Material.findById(id);
+
+    if (!material) throw new Error(`Material with id ${id} not found`);
+
+    return {
+      id: material._id!.toString(),
+      text: material.title,
+    };
+  }
+
   public async checkForUpdates(): Promise<void> {
     const currentHashes = await Material.distinct('sourceHash');
     const files = await this._getFiles(this._materialDataPath);
+
+    this._logger.debug(
+      `Found ${files.length} files in ${this._materialDataPath}`,
+      {files: files.map(file => file.path)}
+    );
+
     const newHashes = files.map(file => file.hash);
     const sinceAddedHashes = newHashes.filter(
       hash => !currentHashes.includes(hash)
@@ -114,6 +156,15 @@ export default class MaterialSourceService implements IMaterialSourceService {
         ) {
           return null;
         }
+
+        if (language === 'ja') {
+          this._logger.warn(
+            'Japanese material files using MongoDB text search is not yet supported. Skipping.',
+            {file}
+          );
+          return null;
+        }
+
         if (!Object.values(MaterialType).includes(type as MaterialType)) {
           return null;
         }

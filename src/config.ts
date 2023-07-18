@@ -31,6 +31,8 @@ export interface IConfig {
   mongoUrl: string;
   chartServiceUrl: string;
   localesPath: string;
+  useFuseAutocompletion: boolean;
+  fuseWorkerCount: number;
   maxYtdlProcesses?: number;
   proccessAcquisitionTimeout?: number;
   speedCacheTtl?: number;
@@ -77,6 +79,15 @@ export const ConfigSchema = z.object({
         ? dirname(process.execPath) + '/locales'
         : __dirname + '/../locales'
     ),
+  useFuseAutocompletion: z
+    .boolean()
+    .describe('Whether to use fuse.js for autocompletion')
+    .default(false),
+  fuseWorkerCount: z
+    .number()
+    .min(1)
+    .describe('The number of worker threads to use for fuse.js')
+    .default(2),
   maxYtdlProcesses: z
     .number()
     .min(0)
@@ -160,6 +171,8 @@ export class Config implements IConfig {
       warning: '#edb63e',
       info: '#578bf2',
     },
+    public readonly useFuseAutocompletion = false,
+    public readonly fuseWorkerCount = 2,
     public readonly maxYtdlProcesses?: number,
     public readonly proccessAcquisitionTimeout?: number,
     public readonly speedCacheTtl?: number,
@@ -243,6 +256,8 @@ export class Config implements IConfig {
       config.localesPath,
       // zod doesn't recognize that the fields match `#${string}`
       config.colors as IColorConfig,
+      config.useFuseAutocompletion,
+      config.fuseWorkerCount,
       config.maxYtdlProcesses,
       config.proccessAcquisitionTimeout,
       config.speedCacheTtl,

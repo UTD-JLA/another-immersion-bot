@@ -13,6 +13,10 @@ bot: src/**/*.ts src/*.ts
 	@echo "Packaging"
 	npm run package
 
+	# hack to get around pkg not being able to find the worker file when bundled with esbuild
+	mkdir -p dist/scripts
+	cp build/services/impl/memoryMaterialSource.worker.js dist/scripts/memoryMaterialSource.worker.js
+
 py-server: py-server/main.py
 	python3 -m venv $(VENV_DIR)
 	$(VENV_DIR)/bin/pip install -r ./py-server/requirements.txt

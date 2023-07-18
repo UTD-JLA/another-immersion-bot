@@ -1,4 +1,5 @@
 import {Container} from 'inversify';
+import {IConfig} from '../config';
 import {
   IAutocompletionService,
   IMaterialSourceService,
@@ -19,18 +20,9 @@ import GuildConfigService from './impl/guildConfig';
 import UserConfigService from './impl/userConfig';
 import ActivityService from './impl/activity';
 import UserSpeedService from './impl/userSpeed';
+import MemoryMaterialSourceService from './impl/memoryMaterialSource';
 
 export function registerServices(container: Container) {
-  container
-    .bind<IAutocompletionService>('AutocompletionService')
-    .to(AutocompletionService);
-
-  container.bind<IChartService>('ChartService').to(ChartService);
-
-  container
-    .bind<IMaterialSourceService>('MaterialSourceService')
-    .to(MaterialSourceService);
-
   container
     .bind<ILoggerService>('LoggerService')
     .toDynamicValue(ctx => {
@@ -42,6 +34,20 @@ export function registerServices(container: Container) {
       });
     })
     .inTransientScope();
+
+  container
+    .bind<IAutocompletionService>('AutocompletionService')
+    .to(AutocompletionService);
+
+  container.bind<IChartService>('ChartService').to(ChartService);
+
+  container
+    .bind<IMaterialSourceService>('MaterialSourceService')
+    .to(
+      (<IConfig>container.get('Config')).useFuseAutocompletion
+        ? MemoryMaterialSourceService
+        : MaterialSourceService
+    );
 
   container
     .bind<ILocalizationService>('LocalizationService')
