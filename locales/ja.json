@@ -58,7 +58,7 @@
     },
     "anime": {
       "name": "アニメ",
-      "description": "アニメの視聴した時間をもっと簡単に記録",
+      "description": "アニメの視聴時間をもっと簡単に記録",
       "episodes.name": "話数",
       "episodes.description": "視聴した話数を入力してください",
       "anime-name.name": "タイトル",
@@ -79,7 +79,7 @@
     },
     "vn": {
       "name": "ノベル",
-      "description": "ノベルの読書した時間をもっと簡単に記録",
+      "description": "ノベルの読書時間をもっと簡単に記録",
       "characters.name": "字数",
       "characters.description": "読書した字数を入力してください",
       "vn-name.name": "タイトル",
@@ -99,7 +99,7 @@
     },
     "manga": {
       "name": "漫画",
-      "description": "漫画の読書した時間をもっと簡単に記録",
+      "description": "漫画の読書時間をもっと簡単に記録",
       "name.name": "タイトル",
       "name.description": "漫画のタイトルを入力してください",
       "pages.name": "ページ数",
@@ -162,7 +162,7 @@
       "next": "次へ",
       "previous": "前へ",
       "page-n-of-m": "{1} ページ中 {0} ページ目",
-      "timezone-shown": "表示されている時間は{0}です。",
+      "timezone-shown": "表示されている時刻は{0}です。",
       "n-minutes": "{0}分"
     }
   },
@@ -183,9 +183,9 @@
     "timeframe.this-year.name": "今年",
     "messages": {
       "no-results": "ランキングが見つかりませんでした。",
-      "top-ten": "トップ10ユーザー",
-      "top-ten-reading": "トップ10ユーザー・読書",
-      "top-ten-listening": "トップ10ユーザー・視聴",
+      "top-ten": "上位10人のユーザー",
+      "top-ten-reading": "上位10人のユーザー・読書",
+      "top-ten-listening": "上位10人のユーザー・視聴",
       "leaderboard-title": "ランキング",
       "duration-days": "{0}日{1}時間{2}分",
       "duration-hours": "{0}時間{1}分",
@@ -194,7 +194,7 @@
   },
   "config": {
     "name": "設定",
-    "description": "ギルドの設定の管理",
+    "description": "ギルドの設定を管理",
     "set.name": "変更",
     "set.description": "設定を変更",
     "set.timezone.name": "タイムゾーン",
@@ -208,14 +208,14 @@
   },
   "user-config": {
     "name": "ユーザー設定",
-    "description": "ユーザーの設定の管理",
+    "description": "ユーザー設定を管理",
     "show": {
       "name": "表示",
-      "description": "ユーザーの設定を表示",
+      "description": "ユーザー設定を表示",
       "messages": {
         "user-config-title": "ユーザー設定",
         "timezone": "タイムゾーン",
-        "daily-goal": "日目標",
+        "daily-goal": "日ごとの目標",
         "reading-speed": "読書速度",
         "reading-speed-pages": "読書速度(ページ/分)",
         "not-set": "未設定"
@@ -237,7 +237,7 @@
         "description": "ユーザーの読書速度を変更",
         "reading-speed": {
           "name": "読書速度",
-          "description": "読書速度(字数/分)を入力してください"
+          "description": "読書速度(文字数/分)を入力してください"
         },
         "manga-page-speed": {
           "name": "マンガページ速度",
@@ -249,11 +249,11 @@
         }
       },
       "daily-goal": {
-        "name": "日課",
-        "description": "ユーザーの日課を変更",
+        "name": "日ごとの目標",
+        "description": "ユーザーの日ごとの目標を変更",
         "daily-goal": {
-          "name": "日課",
-          "description": "日課(分)を入力してください"
+          "name": "日ごとの目標",
+          "description": "日ごとの目標(分)を入力してください"
         }
       },
       "messages": {
@@ -263,7 +263,7 @@
         "new-pages-speed": "新しいマンガページ速度",
         "no-arguments": "ユーザーの設定を変更するには、少なくとも1つの引数が必要です。",
         "reading-speed-set": "読書速度を変更しました",
-        "daily-goal-set": "日課を変更しました"
+        "daily-goal-set": "日ごとの目標を変更しました"
       }
     },
     "autocomplete": {
