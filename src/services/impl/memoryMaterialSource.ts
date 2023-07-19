@@ -9,7 +9,7 @@ import {readdir, readFile} from 'fs/promises';
 import {inject, injectable} from 'inversify';
 import {IConfig} from '../../config';
 import {Worker} from 'worker_threads';
-import {join, dirname} from 'path';
+import {join} from 'path';
 
 export type IndexEntry = {
   scope: string;
