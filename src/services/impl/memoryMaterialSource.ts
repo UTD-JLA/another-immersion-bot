@@ -66,14 +66,7 @@ export default class MemoryMaterialSourceService
     this._callbacks = new Map();
     for (let i = 0; i < config.fuseWorkerCount; i++) {
       this._freeWorkers.push(
-        new Worker(
-          join(
-            process.pkg
-              ? join(dirname(process.execPath), 'scripts')
-              : __dirname,
-            'memoryMaterialSource.worker.js'
-          )
-        )
+        new Worker(join(__dirname, 'memoryMaterialSource.worker.js'))
       );
     }
     this._materialDataPath = config.materialsPath;

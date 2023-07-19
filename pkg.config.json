@@ -1,3 +1,4 @@
 {
-  "targets": ["latest-linuxstatic-x64"]
+  "targets": ["latest-linuxstatic-x64"],
+  "scripts": ["./bundle/memoryMaterialSource.worker.js"]
 }
