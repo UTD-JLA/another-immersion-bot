@@ -41,7 +41,7 @@ export type WorkerResponse = {
 };
 
 @injectable()
-export default class MemoryMaterialSourceService
+export default class FuseMaterialSourceService
   implements IMaterialSourceService
 {
   private readonly _materialDataPath: string;
@@ -66,7 +66,7 @@ export default class MemoryMaterialSourceService
     this._callbacks = new Map();
     for (let i = 0; i < config.fuseWorkerCount; i++) {
       this._freeWorkers.push(
-        new Worker(join(__dirname, 'memoryMaterialSource.worker.js'))
+        new Worker(join(__dirname, 'fuseMaterialSource.worker.js'))
       );
     }
     this._materialDataPath = config.materialsPath;

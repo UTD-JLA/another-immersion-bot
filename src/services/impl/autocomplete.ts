@@ -1,6 +1,7 @@
 import {inject, injectable} from 'inversify';
 import {
   IAutocompletionService,
+  ILoggerService,
   IMaterialSourceService,
   ISuggestion,
   MaterialResult,
@@ -23,7 +24,9 @@ export default class AutocompletionService implements IAutocompletionService {
 
   constructor(
     @inject('MaterialSourceService')
-    materialSource: IMaterialSourceService
+    materialSource: IMaterialSourceService,
+    @inject('LoggerService')
+    private readonly _logger: ILoggerService
   ) {
     this._materialSource = materialSource;
   }
@@ -75,7 +78,13 @@ export default class AutocompletionService implements IAutocompletionService {
     limit: number,
     scope?: string
   ): Promise<ISuggestion[]> {
+    const now = Date.now();
     const suggestions = await this._materialSource.search(input, limit, scope);
+    this._logger.debug(
+      `Search for "${input}" returned ${suggestions.length} results in ${
+        Date.now() - now
+      }ms`
+    );
     return suggestions.map(this._createSuggestion.bind(this));
   }
 }

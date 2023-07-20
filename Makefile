@@ -11,13 +11,13 @@ bot: src/**/*.ts src/*.ts
 	npm run bundle
 
 	# hack to get around pkg not being able to find the worker file when bundled with esbuild
-	cp build/services/impl/memoryMaterialSource.worker.js bundle/memoryMaterialSource.worker.js
+	cp build/services/impl/fuseMaterialSource.worker.js bundle/fuseMaterialSource.worker.js
 		
 	@echo "Packaging"
 	npm run package
 
 	mkdir -p dist/bundle
-	cp bundle/memoryMaterialSource.worker.js dist/bundle/memoryMaterialSource.worker.js
+	cp bundle/fuseMaterialSource.worker.js dist/bundle/fuseMaterialSource.worker.js
 
 py-server: py-server/main.py
 	python3 -m venv $(VENV_DIR)

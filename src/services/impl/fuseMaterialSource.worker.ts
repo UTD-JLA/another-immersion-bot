@@ -1,6 +1,6 @@
 import {parentPort} from 'worker_threads';
 import Fuse from 'fuse.js';
-import type {IndexEntry, WorkerMessage} from './memoryMaterialSource';
+import type {IndexEntry, WorkerMessage} from './fuseMaterialSource';
 
 const index = new Fuse<IndexEntry>([], {
   keys: [

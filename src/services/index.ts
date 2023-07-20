@@ -20,9 +20,12 @@ import GuildConfigService from './impl/guildConfig';
 import UserConfigService from './impl/userConfig';
 import ActivityService from './impl/activity';
 import UserSpeedService from './impl/userSpeed';
-import MemoryMaterialSourceService from './impl/memoryMaterialSource';
+import FuseMaterialSourceService from './impl/fuseMaterialSource';
+import FlexsearchMaterialSourceService from './impl/flexsearchMaterialSource';
 
 export function registerServices(container: Container) {
+  const config = container.get<IConfig>('Config');
+
   container
     .bind<ILoggerService>('LoggerService')
     .toDynamicValue(ctx => {
@@ -44,8 +47,10 @@ export function registerServices(container: Container) {
   container
     .bind<IMaterialSourceService>('MaterialSourceService')
     .to(
-      (<IConfig>container.get('Config')).useFuseAutocompletion
-        ? MemoryMaterialSourceService
+      config.useFlexsearchAutocompletion
+        ? FlexsearchMaterialSourceService
+        : config.useFuseAutocompletion
+        ? FuseMaterialSourceService
         : MaterialSourceService
     );
 
