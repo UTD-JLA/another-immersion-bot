@@ -236,7 +236,7 @@ export default class HistoryCommand implements ICommand {
               `**${activity.date.toISOString().slice(0, 10)}** (${
                 activity.formattedDuration ?? activity.duration
               }): ${activity.type} - ${activity.name}` +
-              (showIds ? `\n<${activity._id}>` : '')
+              (showIds ? `\n<${activity.id}>` : '')
           )
           .join('\n')
       )
@@ -284,7 +284,7 @@ export default class HistoryCommand implements ICommand {
             'n-minutes',
             `${activity.roundedDuration ?? activity.duration} minutes`,
             activity.roundedDuration ?? activity.duration
-          )}) ${showIds ? `<${activity._id}>` : ''}`,
+          )}) ${showIds ? `<${activity.id}>` : ''}`,
           inline: true,
         }))
       )

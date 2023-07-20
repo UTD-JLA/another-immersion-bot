@@ -363,7 +363,7 @@ export default class LogCommand implements ICommand {
           value: activity.tags?.join('\n') ?? 'None',
         }
       )
-      .setFooter({text: `ID: ${activity._id}`})
+      .setFooter({text: `ID: ${activity.id}`})
       .setImage(vidInfo.thumbnail)
       .setTimestamp(activity.date)
       .setColor(this._config.colors.success);
@@ -449,7 +449,7 @@ export default class LogCommand implements ICommand {
           value: activity.formattedDuration!,
         }
       )
-      .setFooter({text: `ID: ${activity._id}`})
+      .setFooter({text: `ID: ${activity.id}`})
       .setTimestamp(activity.date)
       .setColor(this._config.colors.success);
 
@@ -505,7 +505,7 @@ export default class LogCommand implements ICommand {
 
     const tags = ['vn'];
 
-    const newActivity: IActivity = {
+    const newActivity: Omit<IActivity, 'id'> = {
       name,
       duration,
       tags,
@@ -542,7 +542,7 @@ export default class LogCommand implements ICommand {
           value: activity.formattedDuration!,
         }
       )
-      .setFooter({text: `ID: ${activity._id}`})
+      .setFooter({text: `ID: ${activity.id}`})
       .setTimestamp(activity.date)
       .setColor(this._config.colors.success);
 
@@ -647,7 +647,7 @@ export default class LogCommand implements ICommand {
 
     const tags = ['manga'];
 
-    const newActivity: IActivity = {
+    const newActivity: Omit<IActivity, 'id'> = {
       name,
       duration: finalDuration,
       tags,
@@ -694,7 +694,7 @@ export default class LogCommand implements ICommand {
           value: pagesPerMinute.toPrecision(3).toString(),
         }
       )
-      .setFooter({text: `ID: ${activity._id}`})
+      .setFooter({text: `ID: ${activity.id}`})
       .setTimestamp(activity.date)
       .setColor(this._config.colors.success);
 
@@ -829,7 +829,7 @@ export default class LogCommand implements ICommand {
 
     const embed = new EmbedBuilder()
       .setTitle(i18n.mustLocalize('activity-logged', 'Activity Logged!'))
-      .setFooter({text: `ID: ${activity._id}`})
+      .setFooter({text: `ID: ${activity.id}`})
       .setTimestamp(activity.date)
       .setColor(this._config.colors.success);
 

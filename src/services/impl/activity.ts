@@ -1,10 +1,6 @@
 import {IActivityService} from '../interfaces';
-import {
-  Activity,
-  IActivity,
-  ActivityType,
-  ActivityUnit,
-} from '../../models/activity';
+import {IActivity, ActivityType, ActivityUnit} from '../../models/activity';
+import {Activity} from '../../db/mongoose';
 import {injectable} from 'inversify';
 
 @injectable()

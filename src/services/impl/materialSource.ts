@@ -1,10 +1,6 @@
 import {ILoggerService, IMaterialSourceService} from '../interfaces';
-import {
-  Material,
-  IMaterial,
-  MaterialType,
-  MaterialLanguage,
-} from '../../models/material';
+import {IMaterial, MaterialType, MaterialLanguage} from '../../models/material';
+import {Material} from '../../db/mongoose';
 import {injectable, inject} from 'inversify';
 import {IConfig} from '../../config';
 import {readFile, readdir} from 'fs';
@@ -129,7 +125,7 @@ export default class MaterialSourceService implements IMaterialSourceService {
             sourceHash: file.hash,
           }))
         ),
-      [] as IMaterial[]
+      [] as Omit<IMaterial, 'id'>[]
     );
 
     await Material.insertMany(newEntries);

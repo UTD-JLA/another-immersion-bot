@@ -132,9 +132,7 @@ export default class UndoCommand implements ICommand {
       });
 
       if (confirmation.customId === 'undo') {
-        await this._activityService.deleteActivityById(
-          activity._id!.toString()
-        );
+        await this._activityService.deleteActivityById(activity.id);
         await interaction.editReply({
           embeds: [
             embed
