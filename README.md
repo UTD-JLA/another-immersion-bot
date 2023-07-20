@@ -16,55 +16,48 @@ Variables from the config file will precede environment variables. Current confi
 <table>
   <tr>
     <th>Name</th>
-    <th>Environment Variable Equivalent</th>
     <th>Description</th>
     <th>Default</th>
     <th>Required</th>
     <th>Type</th>
   </tr>
   <tr>
-    <td>mongoUrl</td>
-    <td>IB_MONGO_URL</td>
+    <td>mongoUrl (IB_MONGO_URL)<td>
     <td>The URI used to connect to the database</td>
     <td>mongodb://localhost:27017</td>
     <td>Yes</td>
     <td>string</td>
   </tr>
   <tr>
-    <td>token</td>
-    <td>IB_TOKEN</td>
+    <td>token (IB_TOKEN)</td>
     <td>Discord bot token</td>
     <td></td>
     <td>Yes</td>
     <td>string</td>
   </tr>
   <tr>
-    <td>chartServiceUrl</td>
-    <td>IB_CHART_SERVICE_URL</td>
+    <td>chartServiceUrl (IB_CHART_SERVICE_URL)</td>
     <td>URL of http server that generates chart PNG files</td>
     <td>http://localhost:5301/bar</td>
-    <td>Works but returns error response when /chart is used</td>
+    <td>Yes/td>
     <td>string</td>
   </tr>
   <tr>
-    <td>materialsPath</td>
-    <td>IB_MATERIALS_PATH</td>
+    <td>materialsPath (IB_MATERIALS_PATH)</td>
     <td>Path to folder containing autocomplete titles (see <a href="#materialsPath">materialsPath</a>)</td>
     <td><a href="/data">Provided data folder</a></td>
     <td>No</td>
     <td>string</td>
   </tr>
   <tr>
-    <td>logLevel</td>
-    <td>IB_LOG_LEVEL</td>
+    <td>logLevel (IB_LOG_LEVEL)</td>
     <td>Level to set the logging service</td>
     <td>info</td>
     <td>No</td>
     <td>string<a href="#logLevel">*</a></td>
   </tr>
   <tr>
-    <td>localesPath</td>
-    <td>IB_LOCALES_PATH</td>
+    <td>localesPath (IB_LOCALES_PATH)</td>
     <td>Path to folder containing locales files</td>
     <td><a href="/locales">Provided locales folder</a></td>
     <td>No</td>
@@ -72,7 +65,6 @@ Variables from the config file will precede environment variables. Current confi
   </tr>
   <tr>
     <td>colors</td>
-    <td></td>
     <td>Colors used by the bot (such as for generates images and embeds)</td>
     <td><img src="docs/default-colors.png" alt="Default colors"></td>
     <td>No</td>
@@ -80,7 +72,6 @@ Variables from the config file will precede environment variables. Current confi
   </tr>
   <tr>
     <td>useFuseAutocompletion</td>
-    <td></td>
     <td>Whether to use Fuse.js for autocompletion or not</td>
     <td>false</td>
     <td>No</td>
@@ -88,7 +79,6 @@ Variables from the config file will precede environment variables. Current confi
   </tr>
   <tr>
     <td>fuseWorkerCount</td>
-    <td></td>
     <td>Number of workers to use for Fuse.js (duplicate indexes are created for each worker)</td>
     <td>2</td>
     <td>No</td>
@@ -96,7 +86,6 @@ Variables from the config file will precede environment variables. Current confi
   </tr>
   <tr>
     <td>useFlexsearchAutocompletion</td>
-    <td></td>
     <td>Whether to use Flexsearch for autocompletion or not</td>
     <td>false</td>
     <td>No</td>
@@ -104,7 +93,6 @@ Variables from the config file will precede environment variables. Current confi
   </tr>
   <tr>
     <td>maxYtdlProcesses</td>
-    <td></td>
     <td>Maximum number of yt-dlp processes to run at once</td>
     <td>Variable (based on processor count)</td>
     <td>No</td>
@@ -112,7 +100,6 @@ Variables from the config file will precede environment variables. Current confi
   </tr>
   <tr>
     <td>proccessAcquisitionTimeout</td>
-    <td></td>
     <td>How long to wait for a process to acquire a lock before timing out (in milliseconds)</td>
     <td>60000</td>
     <td>No</td>
@@ -120,7 +107,6 @@ Variables from the config file will precede environment variables. Current confi
   </tr>
   <tr>
     <td>speedCacheTtl</td>
-    <td></td>
     <td>How long to cache speed data for (in milliseconds)</td>
     <td>21600000</td>
     <td>No</td>
@@ -128,7 +114,6 @@ Variables from the config file will precede environment variables. Current confi
   </tr>
   <tr>
     <td>speedCacheClearEvery</td>
-    <td></td>
     <td>Reset the speed cache entry for a user whenever they log this many new speeds</td>
     <td>5</td>
     <td>No</td>
@@ -136,7 +121,6 @@ Variables from the config file will precede environment variables. Current confi
   </tr>
   <tr>
     <td>speedLookbackDays</td>
-    <td></td>
     <td>How many days to look back when calculating average speed</td>
     <td>21</td>
     <td>No</td>
@@ -144,7 +128,6 @@ Variables from the config file will precede environment variables. Current confi
   </tr>
   <tr>
     <td>speedLowestWeight</td>
-    <td></td>
     <td>Lowest possible weight for a speed (if the speed was logged `speedLookbackDays` days ago)</td>
     <td>0.9</td>
     <td>No</td>
