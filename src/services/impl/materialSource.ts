@@ -179,7 +179,7 @@ export default class MaterialSourceService implements IMaterialSourceService {
           hash,
           language,
           type,
-          content: content.split('\n'),
+          content: content.split(/\r?\n/),
         };
       })
     );

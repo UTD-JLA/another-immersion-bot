@@ -171,14 +171,14 @@ export default class FlexsearchMaterialSourceService
       const filePath = `${this._materialDataPath}/${file}`;
       const fileContent = await readFile(filePath, 'utf8');
       // groups are seperated by two newlines
-      const groups = fileContent.split('\n\n');
+      const groups = fileContent.split(/\r?\n\r?\n/);
 
       // if this file is in groups, use aliases
       if (groups.length > 1) {
         this._logger.debug(`${file} is in groups, using aliases`);
 
         const entries = groups.map<IndexEntry>(group => {
-          const lines = group.split('\n');
+          const lines = group.split(/\r?\n/);
           const text = lines.shift()!;
           const aliases = lines;
 
@@ -195,7 +195,7 @@ export default class FlexsearchMaterialSourceService
       }
 
       // otherwise, use lines
-      const fileLines = fileContent.split('\n').filter(line => line !== '');
+      const fileLines = fileContent.split(/\r?\n/).filter(line => line !== '');
       const entries = fileLines.map<IndexEntry>(line => ({
         scope,
         language: language as MaterialLanguage,
