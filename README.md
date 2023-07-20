@@ -22,7 +22,7 @@ Variables from the config file will precede environment variables. Current confi
     <th>Type</th>
   </tr>
   <tr>
-    <td>mongoUrl (IB_MONGO_URL)<td>
+    <td>mongoUrl (IB_MONGO_URL)</td>
     <td>The URI used to connect to the database</td>
     <td>mongodb://localhost:27017</td>
     <td>Yes</td>
@@ -39,7 +39,7 @@ Variables from the config file will precede environment variables. Current confi
     <td>chartServiceUrl (IB_CHART_SERVICE_URL)</td>
     <td>URL of http server that generates chart PNG files</td>
     <td>http://localhost:5301/bar</td>
-    <td>Yes/td>
+    <td>Yes</td>
     <td>string</td>
   </tr>
   <tr>
