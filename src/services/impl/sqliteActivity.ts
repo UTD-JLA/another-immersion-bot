@@ -49,6 +49,7 @@ export default class SqliteActivityService implements IActivityService {
 
   public createActivity(activity: Omit<IActivity, 'id'>): Promise<IActivity> {
     const newActivity = this._newModelToInsert(activity);
+    const newTags = [...new Set(activity.tags ?? [])];
 
     this._loggerService.debug(
       `Creating activity ${newActivity.id} for user ${newActivity.userId}`
@@ -57,16 +58,16 @@ export default class SqliteActivityService implements IActivityService {
     db.transaction(tx => {
       let tagIds: number[] = [];
 
-      if (activity.tags) {
+      if (newTags.length > 0) {
         tx.insert(tags)
-          .values(activity.tags.map(tag => ({name: tag})))
+          .values(newTags.map(tag => ({name: tag})))
           .onConflictDoNothing()
           .run();
 
         tagIds = tx
           .select({id: tags.id})
           .from(tags)
-          .where(inArray(tags.name, activity.tags))
+          .where(inArray(tags.name, newTags))
           .all()
           .map(t => t.id);
       }
@@ -219,6 +220,10 @@ export default class SqliteActivityService implements IActivityService {
     since?: Date,
     type?: ActivityType
   ): Promise<{discordId: string; duration: number}[]> {
+    if (memberIds.length === 0) {
+      return Promise.resolve([]);
+    }
+
     let query = db
       .select({
         userId: activities.userId,
