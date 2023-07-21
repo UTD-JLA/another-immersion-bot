@@ -34,6 +34,7 @@ export interface IConfig {
   useFuseAutocompletion: boolean;
   fuseWorkerCount: number;
   useFlexsearchAutocompletion: boolean;
+  useSqlite: boolean;
   maxYtdlProcesses?: number;
   proccessAcquisitionTimeout?: number;
   speedCacheTtl?: number;
@@ -92,6 +93,10 @@ export const ConfigSchema = z.object({
   useFlexsearchAutocompletion: z
     .boolean()
     .describe('Whether to use flexsearch for autocompletion')
+    .default(false),
+  useSqlite: z
+    .boolean()
+    .describe('Whether to use sqlite for activity storage')
     .default(false),
   maxYtdlProcesses: z
     .number()
@@ -179,6 +184,7 @@ export class Config implements IConfig {
     public readonly useFuseAutocompletion = false,
     public readonly fuseWorkerCount = 2,
     public readonly useFlexsearchAutocompletion = false,
+    public readonly useSqlite = false,
     public readonly maxYtdlProcesses?: number,
     public readonly proccessAcquisitionTimeout?: number,
     public readonly speedCacheTtl?: number,
@@ -265,6 +271,7 @@ export class Config implements IConfig {
       config.useFuseAutocompletion,
       config.fuseWorkerCount,
       config.useFlexsearchAutocompletion,
+      config.useSqlite,
       config.maxYtdlProcesses,
       config.proccessAcquisitionTimeout,
       config.speedCacheTtl,

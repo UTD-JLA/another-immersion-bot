@@ -152,6 +152,7 @@ export default class UndoCommand implements ICommand {
         });
       }
     } catch (error) {
+      // TODO: check if error is a timeout error
       await interaction.editReply({
         embeds: [
           embed

@@ -356,7 +356,7 @@ export default class LogCommand implements ICommand {
         },
         {
           name: i18n.mustLocalize('duration', 'Duration'),
-          value: activity.formattedDuration! + ` (${timeIsFrom})`,
+          value: activity.formattedDuration ?? 'TODO' + ` (${timeIsFrom})`,
         },
         {
           name: i18n.mustLocalize('auto-tagged', 'Auto-tagged'),
@@ -446,7 +446,7 @@ export default class LogCommand implements ICommand {
         },
         {
           name: i18n.mustLocalize('duration', 'Duration'),
-          value: activity.formattedDuration!,
+          value: activity.formattedDuration ?? 'TODO',
         }
       )
       .setFooter({text: `ID: ${activity.id}`})
@@ -539,7 +539,7 @@ export default class LogCommand implements ICommand {
         },
         {
           name: i18n.mustLocalize('total-read-time', 'Total Read Time'),
-          value: activity.formattedDuration!,
+          value: activity.formattedDuration ?? 'TODO',
         }
       )
       .setFooter({text: `ID: ${activity.id}`})
@@ -687,7 +687,7 @@ export default class LogCommand implements ICommand {
         },
         {
           name: i18n.mustLocalize('total-read-time', 'Total Read Time'),
-          value: activity.formattedDuration!,
+          value: activity.formattedDuration ?? 'TODO',
         },
         {
           name: duration ? ppmMessage : inferredPpmMessage,
