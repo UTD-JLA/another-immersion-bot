@@ -6,7 +6,7 @@ import {readFile, readdir} from 'fs/promises';
 import {createHash} from 'crypto';
 import {materials} from '../../db/drizzle/schema/materials';
 import db from '../../db/drizzle';
-import {and, eq, inArray, ilike} from 'drizzle-orm';
+import {and, eq, inArray, like} from 'drizzle-orm';
 
 interface IMaterialsFile {
   path: string;
@@ -43,8 +43,8 @@ export default class SqliteMaterialSourceService
   ): Promise<{id: string; text: string}[]> {
     // check if substring
     const sqlQuery = scope
-      ? and(ilike(materials.title, `%${query}%`), eq(materials.type, scope))
-      : ilike(materials.title, `%${query}%`);
+      ? and(like(materials.title, `%${query}%`), eq(materials.type, scope))
+      : like(materials.title, `%${query}%`);
 
     let dbQuery = db
       .select({title: materials.title, id: materials.id})
