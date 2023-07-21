@@ -1,6 +1,9 @@
 {
   "general": {
-    "unexpected-error": "予期せぬエラーが発生しました。もう一度お試しください。"
+    "unexpected-error": "予期せぬエラーが発生しました。もう一度お試しください。",
+    "duration-days": "{0}日{1}時間{2}分",
+    "duration-hours": "{0}時間{1}分",
+    "duration-minutes": "{0}分"
   },
   "log": {
     "name": "log",

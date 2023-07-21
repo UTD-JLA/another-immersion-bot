@@ -1,10 +1,5 @@
 import {model, Schema} from 'mongoose';
-import {
-  IActivity,
-  ActivityType,
-  ActivitySubtype,
-  ActivityUnit,
-} from '../../models/activity';
+import {IActivity, ActivityType, ActivityUnit} from '../../models/activity';
 
 const schema = new Schema<IActivity>({
   userId: {type: String, required: true},
@@ -27,58 +22,5 @@ schema.pre('save', function (this, next) {
 
   next();
 });
-
-schema.virtual('roundedDuration').get(function (this) {
-  return Math.round(this.duration);
-});
-
-schema.virtual('formattedDuration').get(function (this) {
-  const days = Math.floor(this.duration / 1440);
-  const hours = Math.floor((this.duration - days * 1440) / 60);
-  const minutes = Math.round(this.duration - days * 1440 - hours * 60);
-
-  if (days === 0 && hours === 0) {
-    return `${minutes}m`;
-  }
-
-  if (days === 0) {
-    return `${hours}h ${minutes}m`;
-  }
-
-  return `${days}d ${hours}h ${minutes}m`;
-});
-
-schema
-  .virtual('subtype')
-  .get(function (this) {
-    if (!this.tags) {
-      return null;
-    }
-
-    for (const tag of this.tags) {
-      for (const subtype of Object.values(ActivitySubtype)) {
-        if (tag === subtype) {
-          return subtype;
-        }
-      }
-    }
-
-    return null;
-  })
-  .set(function (this, subtype) {
-    if (!this.tags) {
-      this.tags = [];
-    }
-
-    // Remove all subtypes from tags
-    this.tags = this.tags.filter(
-      tag => !(Object.values(ActivitySubtype) as string[]).includes(tag)
-    );
-
-    // Add new subtype to tags
-    if (subtype) {
-      this.tags.push(subtype);
-    }
-  });
 
 export const Activity = model<IActivity>('Activity', schema);

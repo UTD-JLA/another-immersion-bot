@@ -3,14 +3,6 @@ export enum ActivityType {
   Reading = 'reading',
 }
 
-export enum ActivitySubtype {
-  Video = 'video',
-  VN = 'vn',
-  Anime = 'anime',
-  Manga = 'manga',
-  Book = 'book',
-}
-
 export enum ActivityUnit {
   Page = 'page',
   Character = 'character',
@@ -29,8 +21,4 @@ export interface IActivity {
   rawDuration?: number;
   rawDurationUnit?: ActivityUnit;
   speed?: number;
-  // Virtuals
-  subtype?: ActivitySubtype;
-  roundedDuration?: number;
-  formattedDuration?: string;
 }

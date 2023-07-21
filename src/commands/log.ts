@@ -21,6 +21,7 @@ import {IConfig} from '../config';
 import {getUserTimezone, parseTimeWithUserTimezone} from '../util/time';
 import {getCommandBuilder} from './log.data';
 import {IActivityService, IUserSpeedService} from '../services/interfaces';
+import {localizeDuration} from '../util/generalLocalization';
 
 interface VideoURLExtractedInfo {
   title: string;
@@ -356,7 +357,12 @@ export default class LogCommand implements ICommand {
         },
         {
           name: i18n.mustLocalize('duration', 'Duration'),
-          value: activity.formattedDuration ?? 'TODO' + ` (${timeIsFrom})`,
+          value:
+            localizeDuration(
+              activity.duration,
+              interaction.locale,
+              this._localizationService
+            ) + ` (${timeIsFrom})`,
         },
         {
           name: i18n.mustLocalize('auto-tagged', 'Auto-tagged'),
@@ -446,7 +452,11 @@ export default class LogCommand implements ICommand {
         },
         {
           name: i18n.mustLocalize('duration', 'Duration'),
-          value: activity.formattedDuration ?? 'TODO',
+          value: localizeDuration(
+            activity.duration,
+            interaction.locale,
+            this._localizationService
+          ),
         }
       )
       .setFooter({text: `ID: ${activity.id}`})
@@ -539,7 +549,11 @@ export default class LogCommand implements ICommand {
         },
         {
           name: i18n.mustLocalize('total-read-time', 'Total Read Time'),
-          value: activity.formattedDuration ?? 'TODO',
+          value: localizeDuration(
+            activity.duration,
+            interaction.locale,
+            this._localizationService
+          ),
         }
       )
       .setFooter({text: `ID: ${activity.id}`})
@@ -687,7 +701,11 @@ export default class LogCommand implements ICommand {
         },
         {
           name: i18n.mustLocalize('total-read-time', 'Total Read Time'),
-          value: activity.formattedDuration ?? 'TODO',
+          value: localizeDuration(
+            activity.duration,
+            interaction.locale,
+            this._localizationService
+          ),
         },
         {
           name: duration ? ppmMessage : inferredPpmMessage,
