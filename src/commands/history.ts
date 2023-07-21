@@ -18,7 +18,6 @@ import {
   ILocalizationService,
   LocalizationScope,
 } from '../services/interfaces';
-import {localizeDuration} from '../util/generalLocalization';
 
 @injectable()
 export default class HistoryCommand implements ICommand {
