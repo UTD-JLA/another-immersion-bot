@@ -15,9 +15,9 @@ export default class SqliteGuildConfigService implements IGuildConfigService {
       .get();
 
     return Promise.resolve({
-      guildId: guildConfig.guildId,
-      id: guildConfig.guildId,
-      timezone: guildConfig.timeZone ?? undefined,
+      guildId: guildConfig?.guildId,
+      id: guildConfig?.guildId,
+      timezone: guildConfig?.timeZone ?? undefined,
     });
   }
 
@@ -25,9 +25,17 @@ export default class SqliteGuildConfigService implements IGuildConfigService {
     guildId: string,
     config: Partial<IGuildConfig>
   ): Promise<void> {
-    db.update(guildConfigs)
-      .set({timeZone: config.timezone})
-      .where(eq(guildConfigs.guildId, guildId))
+    db.insert(guildConfigs)
+      .values({
+        guildId,
+        timeZone: config.timezone,
+      })
+      .onConflictDoUpdate({
+        target: guildConfigs.guildId,
+        set: {
+          timeZone: config.timezone,
+        },
+      })
       .run();
 
     return Promise.resolve();
