@@ -3,7 +3,7 @@ import {IUserConfig} from '../../models/userConfig';
 import {injectable} from 'inversify';
 import {eq} from 'drizzle-orm';
 import {userConfigs} from '../../db/drizzle/schema/userConfigs';
-import db from '../../db/drizzle';
+import {getDb} from '../../db/drizzle';
 
 @injectable()
 export default class SqliteUserConfig implements IUserConfigService {
@@ -11,7 +11,8 @@ export default class SqliteUserConfig implements IUserConfigService {
     userId: string,
     config: Partial<Omit<IUserConfig, 'userId'>>
   ): Promise<void> {
-    db.insert(userConfigs)
+    getDb()
+      .insert(userConfigs)
       .values({
         userId,
         timeZone: config.timezone,
@@ -34,7 +35,7 @@ export default class SqliteUserConfig implements IUserConfigService {
   }
 
   public getUserConfig(userId: string): Promise<Omit<IUserConfig, 'id'>> {
-    const userConfig = db
+    const userConfig = getDb()
       .select()
       .from(userConfigs)
       .where(eq(userConfigs.userId, userId))
@@ -50,7 +51,7 @@ export default class SqliteUserConfig implements IUserConfigService {
   }
 
   public async getTimezone(userId: string): Promise<string | undefined> {
-    const userConfig = db
+    const userConfig = getDb()
       .select({
         timeZone: userConfigs.timeZone,
       })
@@ -62,7 +63,8 @@ export default class SqliteUserConfig implements IUserConfigService {
   }
 
   public async setTimezone(userId: string, timezone: string): Promise<void> {
-    db.insert(userConfigs)
+    getDb()
+      .insert(userConfigs)
       .values({
         userId,
         timeZone: timezone,
@@ -79,7 +81,7 @@ export default class SqliteUserConfig implements IUserConfigService {
   }
 
   public async getReadingSpeed(userId: string): Promise<number | undefined> {
-    const userConfig = db
+    const userConfig = getDb()
       .select({
         readingSpeed: userConfigs.readingSpeed,
       })
@@ -94,7 +96,8 @@ export default class SqliteUserConfig implements IUserConfigService {
     userId: string,
     readingSpeed: number
   ): Promise<void> {
-    db.insert(userConfigs)
+    getDb()
+      .insert(userConfigs)
       .values({
         userId,
         readingSpeed,
@@ -113,7 +116,7 @@ export default class SqliteUserConfig implements IUserConfigService {
   public async getPageReadingSpeed(
     userId: string
   ): Promise<number | undefined> {
-    const userConfig = db
+    const userConfig = getDb()
       .select({
         readingSpeedPages: userConfigs.readingSpeedPages,
       })
@@ -128,7 +131,8 @@ export default class SqliteUserConfig implements IUserConfigService {
     userId: string,
     readingSpeedPages: number
   ): Promise<void> {
-    db.insert(userConfigs)
+    getDb()
+      .insert(userConfigs)
       .values({
         userId,
         readingSpeedPages,
@@ -145,7 +149,7 @@ export default class SqliteUserConfig implements IUserConfigService {
   }
 
   public async getDailyGoal(userId: string): Promise<number | undefined> {
-    const userConfig = db
+    const userConfig = getDb()
       .select({
         dailyGoal: userConfigs.dailyGoal,
       })
@@ -157,7 +161,8 @@ export default class SqliteUserConfig implements IUserConfigService {
   }
 
   public async setDailyGoal(userId: string, dailyGoal: number): Promise<void> {
-    db.insert(userConfigs)
+    getDb()
+      .insert(userConfigs)
       .values({
         userId,
         dailyGoal,

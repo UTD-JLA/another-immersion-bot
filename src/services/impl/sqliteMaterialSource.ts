@@ -5,7 +5,7 @@ import {IConfig} from '../../config';
 import {readFile, readdir} from 'fs/promises';
 import {createHash} from 'crypto';
 import {materials} from '../../db/drizzle/schema/materials';
-import db from '../../db/drizzle';
+import {getDb} from '../../db/drizzle';
 import {and, eq, inArray, like} from 'drizzle-orm';
 
 interface IMaterialsFile {
@@ -46,7 +46,7 @@ export default class SqliteMaterialSourceService
       ? and(like(materials.title, `%${query}%`), eq(materials.type, scope))
       : like(materials.title, `%${query}%`);
 
-    let dbQuery = db
+    let dbQuery = getDb()
       .select({title: materials.title, id: materials.id})
       .from(materials)
       .where(sqlQuery);
@@ -66,7 +66,7 @@ export default class SqliteMaterialSourceService
   public async getMaterial(id: string): Promise<{id: string; text: string}> {
     const numberId = Number(id);
 
-    const material = db
+    const material = getDb()
       .select({title: materials.title, id: materials.id})
       .from(materials)
       .where(eq(materials.id, numberId))
@@ -81,7 +81,7 @@ export default class SqliteMaterialSourceService
   }
 
   public async checkForUpdates(): Promise<void> {
-    const currentHashes = db
+    const currentHashes = getDb()
       .selectDistinct({sourceHash: materials.sourceHash})
       .from(materials)
       .all()
@@ -124,7 +124,7 @@ export default class SqliteMaterialSourceService
     // delete entries from deleted/modified files
 
     if (sinceDeletedHashes.length > 0) {
-      const result = db
+      const result = getDb()
         .delete(materials)
         .where(inArray(materials.sourceHash, sinceDeletedHashes))
         .run();
@@ -153,7 +153,7 @@ export default class SqliteMaterialSourceService
     // insert in batches of 1000 to avoid call stack size exceeded error
     for (let i = 0; i < newEntries.length; i += 1000) {
       const batch = newEntries.slice(i, i + 1000);
-      db.insert(materials).values(batch).run();
+      getDb().insert(materials).values(batch).run();
     }
 
     this._logger.log(`Added ${newEntries.length} new entries`);

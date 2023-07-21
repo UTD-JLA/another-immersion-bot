@@ -35,6 +35,7 @@ export interface IConfig {
   fuseWorkerCount: number;
   useFlexsearchAutocompletion: boolean;
   useSqlite: boolean;
+  dbPath: string;
   maxYtdlProcesses?: number;
   proccessAcquisitionTimeout?: number;
   speedCacheTtl?: number;
@@ -98,6 +99,10 @@ export const ConfigSchema = z.object({
     .boolean()
     .describe('Whether to use sqlite for activity storage')
     .default(false),
+  dbPath: z
+    .string()
+    .describe('The path to the sqlite database')
+    .default('bot_data.db'),
   maxYtdlProcesses: z
     .number()
     .min(0)
@@ -185,6 +190,7 @@ export class Config implements IConfig {
     public readonly fuseWorkerCount = 2,
     public readonly useFlexsearchAutocompletion = false,
     public readonly useSqlite = false,
+    public readonly dbPath = 'bot_data.db',
     public readonly maxYtdlProcesses?: number,
     public readonly proccessAcquisitionTimeout?: number,
     public readonly speedCacheTtl?: number,
@@ -272,6 +278,7 @@ export class Config implements IConfig {
       config.fuseWorkerCount,
       config.useFlexsearchAutocompletion,
       config.useSqlite,
+      config.dbPath,
       config.maxYtdlProcesses,
       config.proccessAcquisitionTimeout,
       config.speedCacheTtl,

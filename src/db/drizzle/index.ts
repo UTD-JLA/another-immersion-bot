@@ -6,7 +6,19 @@ import {dirname} from 'path';
 const options: Database.Options = process.pkg
   ? {nativeBinding: dirname(process.execPath) + '/better_sqlite3.node'}
   : {};
-const database = new Database('botdata.db', options);
-const db = drizzle(database, {schema});
 
-export default db;
+let db: ReturnType<typeof drizzle<typeof schema>> | null = null;
+
+function createDb(path: string) {
+  db = drizzle(new Database(path, options), {schema});
+  return db;
+}
+
+function getDb() {
+  if (!db) {
+    throw new Error('Database not initialized! getDb() called too early');
+  }
+  return db;
+}
+
+export {createDb, getDb};

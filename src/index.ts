@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import {Client, GatewayIntentBits, REST, Routes, Events} from 'discord.js';
 import {connect} from 'mongoose';
 import {migrate} from 'drizzle-orm/better-sqlite3/migrator';
-import db from './db/drizzle';
+import {createDb} from './db/drizzle';
 import {Config, IConfig, ConfigFields} from './config';
 import {onClientReady, onInteractionCreate} from './events';
 import commands, {ICommand} from './commands';
@@ -39,6 +39,8 @@ function printHelp() {
 
 async function connectDatabase(config: IConfig, log?: ILoggerService) {
   if (config.useSqlite) {
+    const db = createDb(config.dbPath);
+
     log?.log('Migrating database');
     migrate(db, {
       migrationsFolder: process.pkg
@@ -73,6 +75,7 @@ async function runBot() {
     container.bind('Command').to(command).whenTargetNamed(command.name);
   }
 
+  // it is important to connect to the database before login or checking for updates
   await connectDatabase(config, logger);
 
   const materialSourceService = container.get<IMaterialSourceService>(

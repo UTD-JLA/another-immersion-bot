@@ -2,13 +2,13 @@ import {IGuildConfigService} from '../interfaces';
 import {IGuildConfig} from '../../models/guildConfig';
 import {injectable} from 'inversify';
 import {guildConfigs} from '../../db/drizzle/schema/guildConfigs';
-import db from '../../db/drizzle';
+import {getDb} from '../../db/drizzle';
 import {eq} from 'drizzle-orm';
 
 @injectable()
 export default class SqliteGuildConfigService implements IGuildConfigService {
   public getGuildConfig(guildId: string): Promise<IGuildConfig> {
-    const guildConfig = db
+    const guildConfig = getDb()
       .select()
       .from(guildConfigs)
       .where(eq(guildConfigs.guildId, guildId))
@@ -25,7 +25,8 @@ export default class SqliteGuildConfigService implements IGuildConfigService {
     guildId: string,
     config: Partial<IGuildConfig>
   ): Promise<void> {
-    db.insert(guildConfigs)
+    getDb()
+      .insert(guildConfigs)
       .values({
         guildId,
         timeZone: config.timezone,

@@ -1,7 +1,7 @@
 import {IActivityService, ILoggerService} from '../interfaces';
 import {IActivity, ActivityType, ActivityUnit} from '../../models/activity';
 import {inject, injectable} from 'inversify';
-import db from '../../db/drizzle';
+import {getDb} from '../../db/drizzle';
 import {
   activities,
   tags,
@@ -55,7 +55,7 @@ export default class SqliteActivityService implements IActivityService {
       `Creating activity ${newActivity.id} for user ${newActivity.userId}`
     );
 
-    db.transaction(tx => {
+    getDb().transaction(tx => {
       let tagIds: number[] = [];
 
       if (newTags.length > 0) {
@@ -102,7 +102,7 @@ export default class SqliteActivityService implements IActivityService {
   }
 
   public getActivities(userId: string, limit?: number): Promise<IActivity[]> {
-    let query = db
+    let query = getDb()
       .select({
         id: activities.id,
         userId: activities.userId,
@@ -156,7 +156,7 @@ export default class SqliteActivityService implements IActivityService {
   public deleteActivityById(activityId: string): Promise<void> {
     this._loggerService.debug(`Deleting activity ${activityId}`);
 
-    db.transaction(tx => {
+    getDb().transaction(tx => {
       tx.delete(tagsToActivities)
         .where(eq(tagsToActivities.activityId, activityId))
         .run();
@@ -167,7 +167,7 @@ export default class SqliteActivityService implements IActivityService {
   }
 
   public getActivityById(activityId: string): Promise<IActivity | null> {
-    const row = db
+    const row = getDb()
       .select({
         id: activities.id,
         userId: activities.userId,
@@ -224,7 +224,7 @@ export default class SqliteActivityService implements IActivityService {
       return Promise.resolve([]);
     }
 
-    let query = db
+    let query = getDb()
       .select({
         userId: activities.userId,
         duration: sql<number>`SUM(${activities.duration})`,
@@ -258,7 +258,7 @@ export default class SqliteActivityService implements IActivityService {
     startDate: Date,
     endDate: Date
   ): Promise<IActivity[]> {
-    const rows = db
+    const rows = getDb()
       .select({
         id: activities.id,
         userId: activities.userId,
@@ -318,7 +318,7 @@ export default class SqliteActivityService implements IActivityService {
     endDate: Date,
     type?: ActivityUnit
   ): Promise<Array<[Date, number]>> {
-    let query = db
+    let query = getDb()
       .select({
         date: activities.date,
         speed: activities.speed,
@@ -351,7 +351,7 @@ export default class SqliteActivityService implements IActivityService {
     startDate: Date,
     endDate: Date
   ): Promise<Array<[`${number}-${number}-${number}`, number]>> {
-    const rows = db
+    const rows = getDb()
       .select({
         date: activities.date,
         duration: sql<number>`SUM(${activities.duration})`,
