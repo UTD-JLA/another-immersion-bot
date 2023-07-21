@@ -25,6 +25,7 @@ import FlexsearchMaterialSourceService from './impl/flexsearchMaterialSource';
 import SqliteActivityService from './impl/sqliteActivity';
 import SqliteGuildConfigService from './impl/sqliteGuildConfig';
 import SqliteUserConfig from './impl/sqliteUserConfig';
+import SqliteMaterialSourceService from './impl/sqliteMaterialSource';
 
 export function registerServices(container: Container) {
   const config = container.get<IConfig>('Config');
@@ -47,20 +48,19 @@ export function registerServices(container: Container) {
 
   container.bind<IChartService>('ChartService').to(ChartService);
 
-  if (
-    config.useSqlite &&
-    !(config.useFuseAutocompletion || config.useFlexsearchAutocompletion)
-  ) {
-    container
-      .get<ILoggerService>('LoggerService')
-      .warn(
-        'DB autocompletion with sqlite is not supported. Using Flexsearch instead.'
-      );
-  }
+  // if (
+  //   config.useSqlite &&
+  //   !(config.useFuseAutocompletion || config.useFlexsearchAutocompletion)
+  // ) {
+  //   container
+  //     .get<ILoggerService>('LoggerService')
+  //     .warn(
+  //       'DB autocompletion with sqlite is not supported. Using Flexsearch instead.'
+  //     );
+  // }
 
-  // TODO: sqlite autocompletion
   const dbAutocompletion = config.useSqlite
-    ? FlexsearchMaterialSourceService
+    ? SqliteMaterialSourceService
     : MaterialSourceService;
 
   container
