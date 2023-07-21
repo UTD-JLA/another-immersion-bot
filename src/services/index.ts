@@ -48,17 +48,6 @@ export function registerServices(container: Container) {
 
   container.bind<IChartService>('ChartService').to(ChartService);
 
-  // if (
-  //   config.useSqlite &&
-  //   !(config.useFuseAutocompletion || config.useFlexsearchAutocompletion)
-  // ) {
-  //   container
-  //     .get<ILoggerService>('LoggerService')
-  //     .warn(
-  //       'DB autocompletion with sqlite is not supported. Using Flexsearch instead.'
-  //     );
-  // }
-
   const dbAutocompletion = config.useSqlite
     ? SqliteMaterialSourceService
     : MaterialSourceService;

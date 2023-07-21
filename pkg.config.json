@@ -1,4 +1,4 @@
 {
-  "targets": ["latest-linuxstatic-x64"],
-  "scripts": ["./bundle/fuseMaterialSource.worker.js"]
+  "targets": ["latest-linux-x64"],
+  "scripts": ["./bundle/fuseMaterialSource.worker.js", "./better_sqlite3.node"]
 }

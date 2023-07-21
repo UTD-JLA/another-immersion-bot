@@ -15,7 +15,8 @@
     "start": "npm run compile && node build/index.js",
     "new-cmd": "node scripts/new-cmd.js",
     "bundle": "esbuild build/index.js --bundle --platform=node --target=ES2020 --outfile=bundle/index.js",
-    "package": "pkg --compress Brotli bundle/index.js -o dist/another-immersion-bot -c pkg.config.json"
+    "package": "pkg --compress Brotli bundle/index.js -o dist/another-immersion-bot -c pkg.config.json",
+    "generate-migrations": "drizzle-kit generate:sqlite"
   },
   "author": "",
   "license": "GPL-3.0",

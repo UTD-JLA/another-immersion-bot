@@ -1,6 +1,8 @@
 import 'reflect-metadata';
 import {Client, GatewayIntentBits, REST, Routes, Events} from 'discord.js';
 import {connect} from 'mongoose';
+import {migrate} from 'drizzle-orm/better-sqlite3/migrator';
+import db from './db/drizzle';
 import {Config, IConfig, ConfigFields} from './config';
 import {onClientReady, onInteractionCreate} from './events';
 import commands, {ICommand} from './commands';
@@ -11,6 +13,7 @@ import {
 } from './services';
 import {Container} from 'inversify';
 import {sync as commandExistsSync} from 'command-exists';
+import {dirname} from 'path';
 
 (async function main() {
   if (process.argv.length > 2) {
@@ -32,6 +35,20 @@ function printHelp() {
       }`
     );
   });
+}
+
+async function connectDatabase(config: IConfig, log?: ILoggerService) {
+  if (config.useSqlite) {
+    log?.log('Migrating database');
+    migrate(db, {
+      migrationsFolder: process.pkg
+        ? dirname(process.execPath) + '/migrations'
+        : __dirname + '/../migrations',
+    });
+  } else {
+    log?.log(`Connecting to MongoDB at ${config.mongoUrl}`);
+    await connect(config.mongoUrl);
+  }
 }
 
 async function runBot() {
@@ -56,8 +73,7 @@ async function runBot() {
     container.bind('Command').to(command).whenTargetNamed(command.name);
   }
 
-  logger.log(`Connecting to MongoDB at ${config.mongoUrl}`);
-  await connect(config.mongoUrl);
+  await connectDatabase(config, logger);
 
   const materialSourceService = container.get<IMaterialSourceService>(
     'MaterialSourceService'
