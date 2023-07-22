@@ -7,7 +7,17 @@ import {
   tags,
   tagsToActivities,
 } from '../../db/drizzle/schema/activities';
-import {eq, desc, InferModel, inArray, sql, gte, lte, and} from 'drizzle-orm';
+import {
+  eq,
+  desc,
+  InferModel,
+  inArray,
+  sql,
+  gte,
+  lte,
+  and,
+  isNotNull,
+} from 'drizzle-orm';
 // For now we use mongoose's ObjectId to generate IDs
 // so they are easily migrated from and to MongoDB
 import {Types} from 'mongoose';
@@ -318,28 +328,27 @@ export default class SqliteActivityService implements IActivityService {
     endDate: Date,
     type?: ActivityUnit
   ): Promise<Array<[Date, number]>> {
-    let query = getDb()
+    let query = and(
+      and(eq(activities.userId, userId), isNotNull(activities.speed)),
+      and(
+        gte(activities.date, startDate.getTime()),
+        lte(activities.date, endDate.getTime())
+      )
+    );
+
+    if (type) {
+      query = and(query, eq(activities.rawDurationUnit, type));
+    }
+
+    const rows = getDb()
       .select({
         date: activities.date,
         speed: activities.speed,
       })
       .from(activities)
-      .where(
-        and(
-          eq(activities.userId, userId),
-          and(
-            gte(activities.date, startDate.getTime()),
-            lte(activities.date, endDate.getTime())
-          )
-        )
-      )
-      .orderBy(activities.date);
-
-    if (type) {
-      query = query.where(eq(activities.type, type));
-    }
-
-    const rows = query.all();
+      .where(query)
+      .orderBy(activities.date)
+      .all();
 
     return Promise.resolve(
       rows.map(row => [new Date(row.date), row.speed] as [Date, number])
