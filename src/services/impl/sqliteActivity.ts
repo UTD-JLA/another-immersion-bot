@@ -234,26 +234,33 @@ export default class SqliteActivityService implements IActivityService {
       return Promise.resolve([]);
     }
 
-    let query = getDb()
+    let query = inArray(activities.userId, memberIds);
+
+    if (since) {
+      const newQuery = and(query, gte(activities.date, since.getTime()));
+      if (newQuery) {
+        query = newQuery;
+      }
+    }
+
+    if (type) {
+      const newQuery = and(query, eq(activities.type, type));
+      if (newQuery) {
+        query = newQuery;
+      }
+    }
+
+    const rows = getDb()
       .select({
         userId: activities.userId,
         duration: sql<number>`SUM(${activities.duration})`,
       })
       .from(activities)
-      .where(inArray(activities.userId, memberIds))
+      .where(query)
       .groupBy(activities.userId)
       .orderBy(desc(sql`SUM(${activities.duration})`))
-      .limit(limit);
-
-    if (since) {
-      query = query.where(gte(activities.date, since.getTime()));
-    }
-
-    if (type) {
-      query = query.where(eq(activities.type, type));
-    }
-
-    const rows = query.all();
+      .limit(limit)
+      .all();
 
     return Promise.resolve(
       rows.map(row => ({
