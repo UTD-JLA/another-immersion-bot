@@ -14,11 +14,25 @@ import {
 import {Container} from 'inversify';
 import {sync as commandExistsSync} from 'command-exists';
 import {dirname} from 'path';
+import {pullAll} from './pull';
 
 (async function main() {
   if (process.argv.length > 2) {
     if (process.argv[2] === 'help') {
       printHelp();
+      return;
+    }
+
+    if (process.argv[2] === 'pull') {
+      if (process.argv.length < 5) {
+        console.error('Missing arguments');
+        console.error(
+          'Usage: another-immersion-bot pull <mongo-url> <sqlite-path>'
+        );
+        return;
+      }
+
+      await pullAll(process.argv[3], process.argv[4]);
       return;
     }
   }
@@ -37,18 +51,21 @@ function printHelp() {
   });
 }
 
-async function connectDatabase(config: IConfig, log?: ILoggerService) {
+async function connectDatabase(
+  config: IConfig,
+  log?: (msg: string) => void | Promise<void>
+) {
   if (config.useSqlite) {
     const db = createDb(config.dbPath);
 
-    log?.log('Migrating database');
+    log?.('Migrating database');
     migrate(db, {
       migrationsFolder: process.pkg
         ? dirname(process.execPath) + '/migrations'
         : __dirname + '/../migrations',
     });
   } else {
-    log?.log(`Connecting to MongoDB at ${config.mongoUrl}`);
+    log?.(`Connecting to MongoDB at ${config.mongoUrl}`);
     await connect(config.mongoUrl);
   }
 }
@@ -76,7 +93,7 @@ async function runBot() {
   }
 
   // it is important to connect to the database before login or checking for updates
-  await connectDatabase(config, logger);
+  await connectDatabase(config, logger.log.bind(logger));
 
   const materialSourceService = container.get<IMaterialSourceService>(
     'MaterialSourceService'
