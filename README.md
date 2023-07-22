@@ -168,7 +168,7 @@ Without grouping, aliases will become their own title entries.
 ## Running
 
 ### From Source
-1. Either install [MongoDB community edition](https://www.mongodb.com/docs/manual/installation/) or use a cloud service like [MongoDB Atlas](https://www.mongodb.com/cloud/atlas).
+1. Either set up your configuration to use sqlite or install [MongoDB community edition](https://www.mongodb.com/docs/manual/installation/) or use a cloud service like [MongoDB Atlas](https://www.mongodb.com/cloud/atlas).
 2. Install yt-dlp on the system you will be running the bot on. [See here for installation instructions](https://github.com/yt-dlp/yt-dlp/wiki/Installation).
 3. Install [Node.js](https://nodejs.org/en/download) (>=16.9.0) and [Python 3](https://www.python.org/downloads/).
 4. Clone the repository. `git clone https://github.com/UTD-JLA/another-immersion-bot.git`
