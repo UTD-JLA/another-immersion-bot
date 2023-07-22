@@ -41,6 +41,12 @@ import {pullAll} from './pull';
 })();
 
 function printHelp() {
+  console.log('Usage: another-immersion-bot [command]');
+  console.log();
+  console.log('Available commands:');
+  console.log('  help - print this help message');
+  console.log('  pull <mongo-url> <sqlite-path> - pull data from MongoDB');
+  console.log();
   console.log('Available config variables:');
   ConfigFields.forEach(field => {
     console.log(
