@@ -148,7 +148,7 @@ export default class SqliteActivityService implements IActivityService {
         rawDuration: row.rawDuration ?? undefined,
         rawDurationUnit: row.rawDurationUnit as ActivityUnit,
         speed: row.speed ?? undefined,
-        tags: row.tags,
+        tags: row.tags[0] === null ? [] : row.tags,
       }))
     );
   }
@@ -210,7 +210,7 @@ export default class SqliteActivityService implements IActivityService {
       rawDuration: row.rawDuration ?? undefined,
       rawDurationUnit: row.rawDurationUnit as ActivityUnit,
       speed: row.speed ?? undefined,
-      tags: row.tags,
+      tags: row.tags[0] === null ? [] : row.tags,
     });
   }
 
@@ -307,7 +307,7 @@ export default class SqliteActivityService implements IActivityService {
         rawDuration: row.rawDuration ?? undefined,
         rawDurationUnit: row.rawDurationUnit as ActivityUnit,
         speed: row.speed ?? undefined,
-        tags: row.tags,
+        tags: row.tags[0] === null ? [] : row.tags,
       }))
     );
   }
