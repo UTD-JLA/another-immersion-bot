@@ -87,7 +87,7 @@ Variables from the config file will precede environment variables. Current confi
     <td>number</td>
   </tr>
   <tr>
-    <td>proccessAcquisitionTimeout</td>
+    <td>processAcquisitionTimeout</td>
     <td>How long to wait for a process to acquire a lock before timing out (in milliseconds)</td>
     <td>60000</td>
     <td>number</td>
