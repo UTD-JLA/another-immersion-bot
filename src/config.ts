@@ -37,7 +37,7 @@ export interface IConfig {
   useSqlite: boolean;
   dbPath: string;
   maxYtdlProcesses?: number;
-  proccessAcquisitionTimeout?: number;
+  processAcquisitionTimeout?: number;
   speedCacheTtl?: number;
   speedCacheClearEvery?: number;
   speedLookbackDays?: number;
@@ -108,7 +108,7 @@ export const ConfigSchema = z.object({
     .min(0)
     .optional()
     .describe('The max number of yt-dlp processes to run at once'),
-  proccessAcquisitionTimeout: z
+  processAcquisitionTimeout: z
     .number()
     .min(0)
     .optional()
@@ -192,7 +192,7 @@ export class Config implements IConfig {
     public readonly useSqlite = false,
     public readonly dbPath = 'bot_data.db',
     public readonly maxYtdlProcesses?: number,
-    public readonly proccessAcquisitionTimeout?: number,
+    public readonly processAcquisitionTimeout?: number,
     public readonly speedCacheTtl?: number,
     public readonly speedCacheClearEvery?: number,
     public readonly speedLookbackDays?: number,
@@ -280,7 +280,7 @@ export class Config implements IConfig {
       config.useSqlite,
       config.dbPath,
       config.maxYtdlProcesses,
-      config.proccessAcquisitionTimeout,
+      config.processAcquisitionTimeout,
       config.speedCacheTtl,
       config.speedCacheClearEvery,
       config.speedLookbackDays,

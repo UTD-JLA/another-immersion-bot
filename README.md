@@ -99,7 +99,7 @@ Variables from the config file will precede environment variables. Current confi
     <td>number</td>
   </tr>
   <tr>
-    <td>proccessAcquisitionTimeout</td>
+    <td>processAcquisitionTimeout</td>
     <td>How long to wait for a process to acquire a lock before timing out (in milliseconds)</td>
     <td>60000</td>
     <td>number</td>
@@ -149,6 +149,7 @@ Colors should be in format `#RRGGBB`. The keys are the names of the colors and t
   success: `#${string}`;
 }
 ```
+
 #### Autocompletion configuration recommendations
 There are currently three ways to generate autocomplete results (Fuse.js, Flexsearch, and SQLite/MongoDB query), which one you use depends on whether you value speed, scoring quality, or simplicity. 
 Here is a simple breakdown. 

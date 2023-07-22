@@ -285,7 +285,7 @@ export default class LogCommand implements ICommand {
 
     try {
       const timeToWait =
-        this._config.proccessAcquisitionTimeout ?? 1 * 60 * 1000;
+        this._config.processAcquisitionTimeout ?? 1 * 60 * 1000;
       // NOTE: Discord API gives us 15 minutes to edit the reply
       // This is in milliseconds
       release = await this._subprocessLock.acquire(

@@ -165,7 +165,7 @@
       "next": "次へ",
       "previous": "前へ",
       "page-n-of-m": "{1} ページ中 {0} ページ目",
-      "timezone-shown": "表示されている時刻は{0}です。",
+      "timezone-shown": "表示されている日付は{0}の日付です。",
       "n-minutes": "{0}分"
     }
   },
