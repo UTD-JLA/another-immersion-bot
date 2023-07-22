@@ -1,5 +1,6 @@
 import {IGuildConfigService} from '../interfaces';
-import {IGuildConfig, GuildConfig} from '../../models/guildConfig';
+import {IGuildConfig} from '../../models/guildConfig';
+import {GuildConfig} from '../../db/mongoose';
 import {injectable} from 'inversify';
 
 @injectable()
@@ -32,7 +33,7 @@ export default class GuildConfigService implements IGuildConfigService {
     await new GuildConfig({...existingConfig, ...config}).validate();
 
     await GuildConfig.updateOne(
-      {_id: existingConfig._id},
+      {_id: existingConfig.id},
       {
         $set: config,
       }

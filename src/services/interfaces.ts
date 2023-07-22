@@ -100,7 +100,7 @@ export interface IUserConfigService {
     userId: string,
     config: Partial<Omit<IUserConfig, 'userId'>>
   ): Promise<void>;
-  getUserConfig(userId: string): Promise<IUserConfig>;
+  getUserConfig(userId: string): Promise<Omit<IUserConfig, 'id'>>;
   getTimezone(userId: string): Promise<string | undefined>;
   setTimezone(userId: string, timezone: string): Promise<void>;
   getReadingSpeed(userId: string): Promise<number | undefined>;
@@ -112,7 +112,7 @@ export interface IUserConfigService {
 }
 
 export interface IActivityService {
-  createActivity(activity: Omit<IActivity, '_id'>): Promise<IActivity>;
+  createActivity(activity: Omit<IActivity, 'id'>): Promise<IActivity>;
   deleteActivityById(activityId: string): Promise<void>;
   getActivityById(activityId: string): Promise<IActivity | null>;
   getActivities(userId: string, limit?: number): Promise<IActivity[]>;

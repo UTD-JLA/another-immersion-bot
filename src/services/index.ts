@@ -22,6 +22,10 @@ import ActivityService from './impl/activity';
 import UserSpeedService from './impl/userSpeed';
 import FuseMaterialSourceService from './impl/fuseMaterialSource';
 import FlexsearchMaterialSourceService from './impl/flexsearchMaterialSource';
+import SqliteActivityService from './impl/sqliteActivity';
+import SqliteGuildConfigService from './impl/sqliteGuildConfig';
+import SqliteUserConfig from './impl/sqliteUserConfig';
+import SqliteMaterialSourceService from './impl/sqliteMaterialSource';
 
 export function registerServices(container: Container) {
   const config = container.get<IConfig>('Config');
@@ -44,6 +48,10 @@ export function registerServices(container: Container) {
 
   container.bind<IChartService>('ChartService').to(ChartService);
 
+  const dbAutocompletion = config.useSqlite
+    ? SqliteMaterialSourceService
+    : MaterialSourceService;
+
   container
     .bind<IMaterialSourceService>('MaterialSourceService')
     .to(
@@ -51,7 +59,7 @@ export function registerServices(container: Container) {
         ? FlexsearchMaterialSourceService
         : config.useFuseAutocompletion
         ? FuseMaterialSourceService
-        : MaterialSourceService
+        : dbAutocompletion
     );
 
   container
@@ -60,11 +68,15 @@ export function registerServices(container: Container) {
 
   container
     .bind<IGuildConfigService>('GuildConfigService')
-    .to(GuildConfigService);
+    .to(config.useSqlite ? SqliteGuildConfigService : GuildConfigService);
 
-  container.bind<IUserConfigService>('UserConfigService').to(UserConfigService);
+  container
+    .bind<IUserConfigService>('UserConfigService')
+    .to(config.useSqlite ? SqliteUserConfig : UserConfigService);
 
-  container.bind<IActivityService>('ActivityService').to(ActivityService);
+  container
+    .bind<IActivityService>('ActivityService')
+    .to(config.useSqlite ? SqliteActivityService : ActivityService);
 
   container.bind<IUserSpeedService>('UserSpeedService').to(UserSpeedService);
 }

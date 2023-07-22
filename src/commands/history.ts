@@ -233,10 +233,14 @@ export default class HistoryCommand implements ICommand {
         activities
           .map(
             activity =>
-              `**${activity.date.toISOString().slice(0, 10)}** (${
-                activity.formattedDuration ?? activity.duration
-              }): ${activity.type} - ${activity.name}` +
-              (showIds ? `\n<${activity._id}>` : '')
+              `**${activity.date
+                .toISOString()
+                .slice(0, 10)}** (${i18n.mustLocalize(
+                'n-minutes',
+                `${Math.round(activity.duration)} minutes`,
+                Math.round(activity.duration)
+              )}): ${activity.type} - ${activity.name}` +
+              (showIds ? `\n<${activity.id}>` : '')
           )
           .join('\n')
       )
@@ -282,9 +286,9 @@ export default class HistoryCommand implements ICommand {
           })}`,
           value: `${activity.name}\n(${i18n.mustLocalize(
             'n-minutes',
-            `${activity.roundedDuration ?? activity.duration} minutes`,
-            activity.roundedDuration ?? activity.duration
-          )}) ${showIds ? `<${activity._id}>` : ''}`,
+            `${Math.round(activity.duration)} minutes`,
+            Math.round(activity.duration)
+          )}) ${showIds ? `<${activity.id}>` : ''}`,
           inline: true,
         }))
       )

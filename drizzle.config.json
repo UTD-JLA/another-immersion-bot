@@ -1,0 +1,5 @@
+{
+  "schema": "./src/db/drizzle/schema",
+  "out": "./migrations",
+  "driver": "better-sqlite"
+}

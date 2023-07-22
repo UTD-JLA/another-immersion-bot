@@ -1,13 +1,17 @@
 import {IUserConfigService} from '../interfaces';
-import {IUserConfig, UserConfig} from '../../models/userConfig';
+import {IUserConfig} from '../../models/userConfig';
+import {UserConfig} from '../../db/mongoose';
 import {injectable} from 'inversify';
 
 @injectable()
 export default class UserConfigService implements IUserConfigService {
-  private readonly _cache: Map<string, Omit<IUserConfig, 'userId'>> = new Map();
+  private readonly _cache: Map<string, Omit<IUserConfig, 'id' | 'userId'>> =
+    new Map();
 
   // Either returns the cached config or fetches it from the database
-  private async _getUserConfig(userId: string): Promise<IUserConfig> {
+  private async _getUserConfig(
+    userId: string
+  ): Promise<Omit<IUserConfig, 'id'>> {
     const isCached = this._cache.has(userId);
     if (!isCached) {
       const config = await UserConfig.findOne({userId});
@@ -23,7 +27,7 @@ export default class UserConfigService implements IUserConfigService {
   // Updates or creates a new config in the database and updates the cache
   private async _updateUserConfig(
     userId: string,
-    config: Partial<Omit<IUserConfig, 'userId'>>
+    config: Partial<Omit<IUserConfig, 'id' | 'userId'>>
   ): Promise<void> {
     const newConfig = await UserConfig.findOneAndUpdate(
       {userId},
@@ -41,7 +45,7 @@ export default class UserConfigService implements IUserConfigService {
     return this._updateUserConfig(userId, config);
   }
 
-  getUserConfig(userId: string): Promise<IUserConfig> {
+  getUserConfig(userId: string): Promise<Omit<IUserConfig, 'id'>> {
     return this._getUserConfig(userId);
   }
 

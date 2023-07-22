@@ -132,9 +132,7 @@ export default class UndoCommand implements ICommand {
       });
 
       if (confirmation.customId === 'undo') {
-        await this._activityService.deleteActivityById(
-          activity._id!.toString()
-        );
+        await this._activityService.deleteActivityById(activity.id);
         await interaction.editReply({
           embeds: [
             embed
@@ -154,6 +152,7 @@ export default class UndoCommand implements ICommand {
         });
       }
     } catch (error) {
+      // TODO: check if error is a timeout error
       await interaction.editReply({
         embeds: [
           embed

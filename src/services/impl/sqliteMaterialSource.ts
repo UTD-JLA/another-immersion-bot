@@ -1,15 +1,12 @@
 import {ILoggerService, IMaterialSourceService} from '../interfaces';
 import {IMaterial, MaterialType, MaterialLanguage} from '../../models/material';
-import {Material} from '../../db/mongoose';
 import {injectable, inject} from 'inversify';
 import {IConfig} from '../../config';
-import {readFile, readdir} from 'fs';
+import {readFile, readdir} from 'fs/promises';
 import {createHash} from 'crypto';
-import {promisify} from 'util';
-import {isValidObjectId} from 'mongoose';
-
-const readFileAsync = promisify(readFile);
-const readdirAsync = promisify(readdir);
+import {materials} from '../../db/drizzle/schema/materials';
+import {getDb} from '../../db/drizzle';
+import {and, eq, inArray, like} from 'drizzle-orm';
 
 interface IMaterialsFile {
   path: string;
@@ -20,7 +17,9 @@ interface IMaterialsFile {
 }
 
 @injectable()
-export default class MaterialSourceService implements IMaterialSourceService {
+export default class SqliteMaterialSourceService
+  implements IMaterialSourceService
+{
   private readonly _materialDataPath: string;
   private readonly _logger: ILoggerService;
 
@@ -32,43 +31,61 @@ export default class MaterialSourceService implements IMaterialSourceService {
     this._logger = logger;
   }
 
-  public validateId = (id: string): boolean => isValidObjectId(id);
+  public validateId(id: string): boolean {
+    // make sure id is numeric
+    return !isNaN(Number(id));
+  }
 
   public async search(
     query: string,
     limit: number,
     scope?: string
   ): Promise<{id: string; text: string}[]> {
-    const typeFilter = scope ? {type: scope} : {};
+    // check if substring
+    const sqlQuery = scope
+      ? and(like(materials.title, `%${query}%`), eq(materials.type, scope))
+      : like(materials.title, `%${query}%`);
 
-    return Material.find({
-      ...typeFilter,
-      $text: {$search: query},
-    })
-      .sort({score: {$meta: 'textScore'}})
-      .limit(limit)
-      .exec()
-      .then(materials =>
-        materials.map(material => ({
-          id: material._id!.toString(),
-          text: material.title,
-        }))
-      );
+    let dbQuery = getDb()
+      .select({title: materials.title, id: materials.id})
+      .from(materials)
+      .where(sqlQuery);
+
+    if (limit) {
+      dbQuery = dbQuery.limit(limit);
+    }
+
+    const rows = dbQuery.all();
+
+    return rows.map(row => ({
+      id: row.id.toString(),
+      text: row.title,
+    }));
   }
 
   public async getMaterial(id: string): Promise<{id: string; text: string}> {
-    const material = await Material.findById(id);
+    const numberId = Number(id);
+
+    const material = getDb()
+      .select({title: materials.title, id: materials.id})
+      .from(materials)
+      .where(eq(materials.id, numberId))
+      .get();
 
     if (!material) throw new Error(`Material with id ${id} not found`);
 
     return {
-      id: material._id!.toString(),
+      id: material.id.toString(),
       text: material.title,
     };
   }
 
   public async checkForUpdates(): Promise<void> {
-    const currentHashes = await Material.distinct('sourceHash');
+    const currentHashes = getDb()
+      .selectDistinct({sourceHash: materials.sourceHash})
+      .from(materials)
+      .all()
+      .map(row => row.sourceHash);
     const files = await this._getFiles(this._materialDataPath);
 
     this._logger.debug(
@@ -105,14 +122,19 @@ export default class MaterialSourceService implements IMaterialSourceService {
     this._logger.log('Ready to apply changes', {changes});
 
     // delete entries from deleted/modified files
-    const result = await Material.deleteMany({
-      sourceHash: {$in: sinceDeletedHashes},
-    });
-    this._logger.log(
-      `Deleted ${
-        result.deletedCount
-      } entries with hashes ${sinceDeletedHashes.join(', ')}`
-    );
+
+    if (sinceDeletedHashes.length > 0) {
+      const result = getDb()
+        .delete(materials)
+        .where(inArray(materials.sourceHash, sinceDeletedHashes))
+        .run();
+
+      this._logger.log(
+        `Deleted ${
+          result.changes
+        } entries with hashes ${sinceDeletedHashes.join(', ')}`
+      );
+    }
 
     // add entries from added/modified files
     const newEntries = addedFiles.reduce(
@@ -128,13 +150,17 @@ export default class MaterialSourceService implements IMaterialSourceService {
       [] as Omit<IMaterial, 'id'>[]
     );
 
-    await Material.insertMany(newEntries);
+    // insert in batches of 1000 to avoid call stack size exceeded error
+    for (let i = 0; i < newEntries.length; i += 1000) {
+      const batch = newEntries.slice(i, i + 1000);
+      getDb().insert(materials).values(batch).run();
+    }
 
     this._logger.log(`Added ${newEntries.length} new entries`);
   }
 
   private async _getFiles(path: string): Promise<IMaterialsFile[]> {
-    const files = await readdirAsync(path);
+    const files = await readdir(path);
     const materialData = await Promise.all(
       files.map(async file => {
         const parts = file.split('.');
@@ -153,18 +179,10 @@ export default class MaterialSourceService implements IMaterialSourceService {
           return null;
         }
 
-        if (language === 'ja') {
-          this._logger.warn(
-            'Japanese material files using MongoDB text search is not yet supported. Skipping.',
-            {file}
-          );
-          return null;
-        }
-
         if (!Object.values(MaterialType).includes(type as MaterialType)) {
           return null;
         }
-        const content = await readFileAsync(`${path}/${file}`, 'utf8');
+        const content = await readFile(`${path}/${file}`, 'utf8');
         const hash = createHash('sha256')
           .update(content)
           .update(language)

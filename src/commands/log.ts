@@ -21,6 +21,7 @@ import {IConfig} from '../config';
 import {getUserTimezone, parseTimeWithUserTimezone} from '../util/time';
 import {getCommandBuilder} from './log.data';
 import {IActivityService, IUserSpeedService} from '../services/interfaces';
+import {localizeDuration} from '../util/generalLocalization';
 
 interface VideoURLExtractedInfo {
   title: string;
@@ -356,14 +357,19 @@ export default class LogCommand implements ICommand {
         },
         {
           name: i18n.mustLocalize('duration', 'Duration'),
-          value: activity.formattedDuration! + ` (${timeIsFrom})`,
+          value:
+            localizeDuration(
+              activity.duration,
+              interaction.locale,
+              this._localizationService
+            ) + ` (${timeIsFrom})`,
         },
         {
           name: i18n.mustLocalize('auto-tagged', 'Auto-tagged'),
           value: activity.tags?.join('\n') ?? 'None',
         }
       )
-      .setFooter({text: `ID: ${activity._id}`})
+      .setFooter({text: `ID: ${activity.id}`})
       .setImage(vidInfo.thumbnail)
       .setTimestamp(activity.date)
       .setColor(this._config.colors.success);
@@ -446,10 +452,14 @@ export default class LogCommand implements ICommand {
         },
         {
           name: i18n.mustLocalize('duration', 'Duration'),
-          value: activity.formattedDuration!,
+          value: localizeDuration(
+            activity.duration,
+            interaction.locale,
+            this._localizationService
+          ),
         }
       )
-      .setFooter({text: `ID: ${activity._id}`})
+      .setFooter({text: `ID: ${activity.id}`})
       .setTimestamp(activity.date)
       .setColor(this._config.colors.success);
 
@@ -505,7 +515,7 @@ export default class LogCommand implements ICommand {
 
     const tags = ['vn'];
 
-    const newActivity: IActivity = {
+    const newActivity: Omit<IActivity, 'id'> = {
       name,
       duration,
       tags,
@@ -539,10 +549,14 @@ export default class LogCommand implements ICommand {
         },
         {
           name: i18n.mustLocalize('total-read-time', 'Total Read Time'),
-          value: activity.formattedDuration!,
+          value: localizeDuration(
+            activity.duration,
+            interaction.locale,
+            this._localizationService
+          ),
         }
       )
-      .setFooter({text: `ID: ${activity._id}`})
+      .setFooter({text: `ID: ${activity.id}`})
       .setTimestamp(activity.date)
       .setColor(this._config.colors.success);
 
@@ -647,7 +661,7 @@ export default class LogCommand implements ICommand {
 
     const tags = ['manga'];
 
-    const newActivity: IActivity = {
+    const newActivity: Omit<IActivity, 'id'> = {
       name,
       duration: finalDuration,
       tags,
@@ -687,14 +701,18 @@ export default class LogCommand implements ICommand {
         },
         {
           name: i18n.mustLocalize('total-read-time', 'Total Read Time'),
-          value: activity.formattedDuration!,
+          value: localizeDuration(
+            activity.duration,
+            interaction.locale,
+            this._localizationService
+          ),
         },
         {
           name: duration ? ppmMessage : inferredPpmMessage,
           value: pagesPerMinute.toPrecision(3).toString(),
         }
       )
-      .setFooter({text: `ID: ${activity._id}`})
+      .setFooter({text: `ID: ${activity.id}`})
       .setTimestamp(activity.date)
       .setColor(this._config.colors.success);
 
@@ -829,7 +847,7 @@ export default class LogCommand implements ICommand {
 
     const embed = new EmbedBuilder()
       .setTitle(i18n.mustLocalize('activity-logged', 'Activity Logged!'))
-      .setFooter({text: `ID: ${activity._id}`})
+      .setFooter({text: `ID: ${activity.id}`})
       .setTimestamp(activity.date)
       .setColor(this._config.colors.success);
 

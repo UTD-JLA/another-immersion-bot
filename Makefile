@@ -4,7 +4,7 @@ VENV_DIR := venv
 all: zip
 
 bot: src/**/*.ts src/*.ts
-	@echo "Compiling $<"
+	@echo "Compiling"
 	npm run compile
 		
 	@echo "Bundling"
@@ -18,6 +18,8 @@ bot: src/**/*.ts src/*.ts
 
 	mkdir -p dist/bundle
 	cp bundle/fuseMaterialSource.worker.js dist/bundle/fuseMaterialSource.worker.js
+
+	cp node_modules/better-sqlite3/build/Release/better_sqlite3.node dist/better_sqlite3.node
 
 py-server: py-server/main.py
 	python3 -m venv $(VENV_DIR)
@@ -35,6 +37,12 @@ zip: bot py-server data-update
 	mkdir -p ./dist/locales
 	cp -R data/* ./dist/data
 	cp -R locales/* ./dist/locales
+
+	@echo "Generating migration files"
+	npm run generate-migrations
+
+	mkdir -p ./dist/migrations
+	cp -R migrations/* ./dist/migrations
 
 	tar cfz dist-linux-amd64-v$(VERSION).tar.gz -C dist .
 

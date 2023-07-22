@@ -39,7 +39,7 @@ export default class UserSpeedService implements IUserSpeedService {
     this._activityService.on('activityCreated', activity => {
       if (!activity.speed)
         return this._loggerService.debug(
-          `Activity ${activity._id} has no speed, skipping`
+          `Activity ${activity.id} has no speed, skipping`
         );
 
       const userId = activity.userId;

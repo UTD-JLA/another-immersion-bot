@@ -33,6 +33,18 @@ Variables from the config file will precede environment variables. Current confi
     <td>string</td>
   </tr>
   <tr>
+    <td>useSqlite</td>
+    <td>Use SQLite instead of MongoDB</td>
+    <td>False</td>
+    <td>boolean</td>
+  </tr>
+  <tr>
+    <td>dbPath</td>
+    <td>Path to the database that you want to use with SQLite</td>
+    <td>bot_data.db</td>
+    <td>string</td>
+  </tr>
+  <tr>
     <td>chartServiceUrl (IB_CHART_SERVICE_URL)</td>
     <td>URL of http server that generates chart PNG files</td>
     <td>http://localhost:5301/bar</td>
@@ -137,6 +149,21 @@ Colors should be in format `#RRGGBB`. The keys are the names of the colors and t
   success: `#${string}`;
 }
 ```
+
+#### Autocompletion configuration recommendations
+There are currently three ways to generate autocomplete results (Fuse.js, Flexsearch, and SQLite/MongoDB query), which one you use depends on whether you value speed, scoring quality, or simplicity. 
+Here is a simple breakdown. 
+
+Method | Speed | Search Flexibility | Primary Benifit | Demerits | Supports JA titles | Support title grouping*
+-------|-------|--------------------|-----------------|----------|--------------------| ------------------------
+Fuse.js | Slow (200-300ms) | Flexible | Fuzzy search | Uses worker threads to prevent blocking of event loop, high memory usage | Yes | Yes
+Flexsearch | Fast (1-10ms) | Less Flexible | Very fast | No fuzzy search | Yes | Yes
+Database (MongoDB) | Variable (network latency) | Very Flexible | Uses MongoDB's language analyzer | No free JA language analyzer, requires querying database over network | No | No
+Database (SQLite)  | Fast (1-10ms) | Least Flexible | Very fast and simple | Only matches results against substrings | Yes | No
+
+##### Title grouping
+Title grouping allows title entries to also have aliases. For example, with grouping "bozaro" and "oregairu" will become "ぼっち・ざ・ろっく！" and "やはり俺の青春ラブコメはまちがっている." in the suggestions.
+Without grouping, aliases will become their own title entries.
 
 ## Running
 
