@@ -11,15 +11,19 @@ import {IConfig, IColorConfig} from '../config';
 import {IUserConfigService, IGuildConfigService} from '../services';
 import {parseTimeWithUserTimezone, calculateDeltaInDays} from '../util/time';
 import {IActivityService, ILocalizationService} from '../services/interfaces';
+import {Stream} from 'stream';
+import {request} from 'http';
+import {request as httpsRequest} from 'https';
 
 @injectable()
 export default class ChartCommand implements ICommand {
-  private readonly _chartService: IChartService;
   private readonly _colors: IColorConfig;
   private readonly _userService: IUserConfigService;
   private readonly _guildService: IGuildConfigService;
   private readonly _activityService: IActivityService;
   private readonly _localizationService: ILocalizationService;
+  private readonly _url: URL;
+  private readonly _useQuickChart: boolean;
 
   constructor(
     @inject('ChartService') chartService: IChartService,
@@ -29,7 +33,8 @@ export default class ChartCommand implements ICommand {
     @inject('ActivityService') activityService: IActivityService,
     @inject('LocalizationService') localizationService: ILocalizationService
   ) {
-    this._chartService = chartService;
+    this._url = new URL(config.chartServiceUrl);
+    this._useQuickChart = true; //config.useQuickChart;
     this._colors = config.colors;
     this._userService = userService;
     this._guildService = guildService;
@@ -135,7 +140,67 @@ export default class ChartCommand implements ICommand {
       ) as SlashCommandBuilder;
   }
 
-  public async execute(interaction: ChatInputCommandInteraction) {
+  private _getDateBarChartPng(
+    data: {
+      x: string;
+      y: number;
+    }[],
+    color: string,
+    buckets: number,
+    horizontal = -1,
+    horizontalColor = 'r'
+  ): Promise<Stream> {
+    const body = JSON.stringify({
+      data,
+      color,
+      buckets,
+      horizontal,
+      horizontal_color: horizontalColor,
+    });
+
+    const labels = data.map(d => d.x);
+    const values = data.map(d => d.y);
+
+    console.log(labels);
+    console.log(values);
+
+    return new Promise<Stream>((resolve, reject) => {
+      const req = request(
+        {
+          hostname: this._url.hostname,
+          port: this._url.port,
+          path: '/easyDateBar',
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': body.length,
+          },
+        },
+        res => {
+          if (res.headers['content-type'] !== 'image/png') {
+            reject(
+              new Error(`Chart service returned ${res.headers['content-type']}`)
+            );
+          }
+
+          if (res.statusCode !== 200) {
+            reject(new Error(`Chart service returned ${res.statusCode}`));
+          }
+
+          resolve(res);
+        }
+      );
+
+      req.on('error', reject);
+      req.write(body);
+      req.end();
+    });
+  }
+
+  // Generate chart using quickchart.io instead of the chart service
+  private async _executeQuickChart(
+    interaction: ChatInputCommandInteraction
+  ): Promise<void> {
     const i18n = this._localizationService.useScope(
       interaction.locale,
       'chart.messages'
@@ -143,11 +208,9 @@ export default class ChartCommand implements ICommand {
 
     await interaction.deferReply();
 
-    const maxBuckets = 20;
     const span = interaction.options.getSubcommand(true);
     const beginningDate = new Date();
     const endDate = new Date();
-    let nBuckets = 7;
 
     if (span === 'custom') {
       const beginningString = interaction.options.getString('beginning', true);
@@ -210,6 +273,263 @@ export default class ChartCommand implements ICommand {
         });
         return;
       }
+
+      // Don't allow graphing the future
+      if (actualEndDate.getTime() > new Date().getTime()) {
+        await interaction.editReply({
+          content: i18n.mustLocalize(
+            'cannot-be-in-the-future',
+            'End date cannot be in the future'
+          ),
+        });
+        return;
+      }
+
+      beginningDate.setTime(actualBeginningDate.getTime());
+      endDate.setTime(actualEndDate.getTime());
+    } else if (span === 'weekly') {
+      beginningDate.setDate(beginningDate.getDate() - 6);
+    } else if (span === 'monthly') {
+      beginningDate.setDate(beginningDate.getDate() - 30);
+    } else if (span === 'yearly') {
+      beginningDate.setFullYear(beginningDate.getFullYear() - 1);
+    }
+
+    const activities = await this._activityService.getDailyDurationsInDateRange(
+      interaction.user.id,
+      beginningDate,
+      endDate
+    );
+
+    const customRangeDelta = Math.ceil(
+      calculateDeltaInDays(endDate, beginningDate)
+    );
+
+    // if the span is custom, we need to determine the effective span
+    // if the span is greater than 90 days, we group by months
+    // grouping by months
+    const effectiveSpan =
+      span === 'custom'
+        ? customRangeDelta > 90
+          ? 'yearly'
+          : customRangeDelta > 30
+          ? 'monthly'
+          : 'weekly'
+        : span;
+
+    // how many chars of the date (YYYY-MM-DD) are significant
+    // everyhing except for 'yearly' is YYYY-MM-DD
+    const significantDatePart = effectiveSpan === 'yearly' ? 7 : 10;
+
+    const buckets = new Map<string, number>();
+
+    for (const [dateString, minutes] of activities) {
+      const date = new Date(dateString);
+      const dateKey = date.toISOString().slice(0, significantDatePart);
+
+      if (!buckets.has(dateKey)) {
+        buckets.set(dateKey, 0);
+      }
+
+      buckets.set(dateKey, buckets.get(dateKey)! + minutes);
+    }
+
+    // reindex the bucket keys to include missing dates
+    const date = new Date(beginningDate);
+    while (date.getTime() <= endDate.getTime()) {
+      const dateKey = date.toISOString().slice(0, significantDatePart);
+
+      if (!buckets.has(dateKey)) {
+        buckets.set(dateKey, 0);
+      }
+
+      // make sure not to jump over a whole month
+      // but if we are only indexing by month, there is
+      // no need to check every day
+      date.setDate(date.getDate() + (significantDatePart === 7 ? 28 : 1));
+    }
+
+    const [x, y] = Array.from(buckets.entries())
+      .sort(([a], [b]) => (a > b ? 1 : -1))
+      .reduce(
+        (acc, curr) => {
+          acc[0].push(curr[0]);
+          acc[1].push(curr[1]);
+          return acc;
+        },
+        [[], []] as [string[], number[]]
+      );
+
+    const req = httpsRequest(
+      {
+        hostname: 'quickchart.io',
+        path: '/chart',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      },
+      res => {
+        if (res.statusCode !== 200) {
+          console.log(res.statusCode);
+          console.log(res.statusMessage);
+          console.log(res.headers);
+          return;
+        }
+
+        const chunks: Buffer[] = [];
+
+        res.on('data', chunk => {
+          chunks.push(chunk);
+        });
+
+        res.on('end', () => {
+          const buffer = Buffer.concat(chunks);
+          const attachment = new AttachmentBuilder(buffer).setName('chart.png');
+          const embed = new EmbedBuilder().setImage('attachment://chart.png');
+
+          interaction.editReply({
+            embeds: [embed],
+            files: [attachment],
+          });
+        });
+      }
+    );
+
+    const dailyGoal = await this._userService.getDailyGoal(interaction.user.id);
+    const daysPerBar = Math.ceil(
+      calculateDeltaInDays(endDate, beginningDate) / x.length
+    );
+    const goalPerBar = (dailyGoal ?? 0) * daysPerBar;
+
+    req.on('error', err => {
+      console.log(err);
+    });
+
+    const data = {
+      version: '2',
+      backgroundColor: 'transparent',
+      width: 500,
+      height: 300,
+      devicePixelRatio: 1.0,
+      format: 'png',
+      chart: {
+        type: 'bar',
+        data: {
+          labels: x,
+          datasets: [
+            {
+              data: y,
+              backgroundColor: this._colors.secondary,
+            },
+          ],
+        },
+        options: {
+          legend: {
+            display: false,
+          },
+          scales: {
+            xAxes: [
+              {
+                ticks: {
+                  fontColor: '#777',
+                },
+              },
+            ],
+            yAxes: [
+              {
+                ticks: {
+                  fontColor: '#777',
+                },
+              },
+            ],
+          },
+          annotation: {
+            annotations: [
+              {
+                type: 'line',
+                mode: 'horizontal',
+                value: goalPerBar,
+                scaleID: 'y-axis-0',
+                borderColor: this._colors.primary,
+                borderWidth: 3,
+              },
+            ],
+          },
+        },
+      },
+    };
+
+    req.write(JSON.stringify(data));
+    req.end();
+  }
+
+  public async execute(interaction: ChatInputCommandInteraction) {
+    if (this._useQuickChart) {
+      await this._executeQuickChart(interaction);
+      return;
+    }
+
+    const i18n = this._localizationService.useScope(
+      interaction.locale,
+      'chart.messages'
+    );
+
+    await interaction.deferReply();
+
+    const maxBuckets = 20;
+    const span = interaction.options.getSubcommand(true);
+    const beginningDate = new Date();
+    const endDate = new Date();
+    let nBuckets = 7;
+
+    if (span === 'custom') {
+      const beginningString = interaction.options.getString('beginning', true);
+      const endString = interaction.options.getString('end', true);
+
+      const [parsedBeginningDate, parsedEndDate] = await Promise.all(
+        [beginningString, endString].map(str =>
+          parseTimeWithUserTimezone(
+            this._userService,
+            this._guildService,
+            str,
+            interaction.user.id,
+            interaction.guildId
+          )
+        )
+      );
+
+      if (!parsedBeginningDate) {
+        await interaction.editReply({
+          content: i18n.mustLocalize(
+            'invalid-date',
+            `Invalid date: ${beginningString}`,
+            beginningString
+          ),
+        });
+        return;
+      }
+
+      if (!parsedEndDate) {
+        await interaction.editReply({
+          content: i18n.mustLocalize(
+            'invalid-date',
+            `Invalid date: ${endString}`,
+            endString
+          ),
+        });
+        return;
+      }
+
+      const actualBeginningDate =
+        parsedBeginningDate.getTime() > parsedEndDate.getTime()
+          ? parsedEndDate
+          : parsedBeginningDate;
+
+      const actualEndDate =
+        parsedBeginningDate.getTime() > parsedEndDate.getTime()
+          ? parsedBeginningDate
+          : parsedEndDate;
 
       // Don't allow graphing the future
       if (actualEndDate.getTime() > new Date().getTime()) {
@@ -289,7 +609,7 @@ export default class ChartCommand implements ICommand {
       });
     }
 
-    const chart = await this._chartService.getDateBarChartPng(
+    const chart = await this._getDateBarChartPng(
       activities.map(a => ({x: a._id, y: a.count})),
       this._colors.secondary,
       nBuckets,
@@ -311,8 +631,6 @@ export default class ChartCommand implements ICommand {
     const roundedPeakTime = Math.round(peakTime);
     const roundedAverageTime = Math.round(averageTime);
     const roundedTotalTime = Math.round(totalTime);
-
-    const attachment = new AttachmentBuilder(chart).setName('chart.png');
 
     const spanTitle =
       span === 'custom'
@@ -369,6 +687,7 @@ export default class ChartCommand implements ICommand {
             'Each bar represents one day.'
           );
 
+    const attachment = new AttachmentBuilder(chart).setName('chart.png');
     const embed = new EmbedBuilder()
       .setTitle(spanTitle)
       .setDescription(embedDescription)
@@ -403,9 +722,11 @@ export default class ChartCommand implements ICommand {
       .setColor(this._colors.primary)
       .setFooter({text: embedFooter});
 
-    await interaction.editReply({
+    const msg = await interaction.editReply({
       embeds: [embed],
       files: [attachment],
     });
+
+    console.log(msg.embeds[0].image?.url);
   }
 }
