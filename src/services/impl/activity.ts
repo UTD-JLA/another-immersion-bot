@@ -115,7 +115,7 @@ export default class ActivityService implements IActivityService {
     endDate: Date,
     timezone?: string
   ): Promise<[`${number}-${number}-${number}`, number][]> {
-    const tzQuery = timezone ? {$timezone: timezone} : {};
+    const tzQuery = timezone ? {timezone} : {};
 
     const query = Activity.aggregate([
       {
