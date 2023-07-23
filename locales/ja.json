@@ -308,7 +308,7 @@
       "average-time": "平均時間",
       "peak-time": "ピーク時間",
       "n-minutes": "{0}分",
-      "n-minutes-on-date": "{0}分 ({1} UTC)",
+      "n-minutes-on-date": "{0}分 ({1})",
       "span-goal-reached-ratio": "この時期の総計目標達成率",
       "invalid-date-range": "開始日と終了日の間隔は5年以内である必要があります。期間を縮めてください。"
     }
