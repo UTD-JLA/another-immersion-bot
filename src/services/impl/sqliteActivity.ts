@@ -1,4 +1,8 @@
-import {IActivityService, ILoggerService} from '../interfaces';
+import {
+  IActivityService,
+  ILoggerService,
+  IUserConfigService,
+} from '../interfaces';
 import {IActivity, ActivityType, ActivityUnit} from '../../models/activity';
 import {inject, injectable} from 'inversify';
 import {getDb} from '../../db/drizzle';
@@ -21,13 +25,16 @@ import {
 // For now we use mongoose's ObjectId to generate IDs
 // so they are easily migrated from and to MongoDB
 import {Types} from 'mongoose';
+import {getUTCOffset} from '../../util/time';
 
 @injectable()
 export default class SqliteActivityService implements IActivityService {
   private readonly _createdListeners: Array<(activity: IActivity) => void>;
 
   constructor(
-    @inject('LoggerService') private readonly _loggerService: ILoggerService
+    @inject('LoggerService') private readonly _loggerService: ILoggerService,
+    @inject('UserConfigService')
+    private readonly _userConfigService: IUserConfigService
   ) {
     this._createdListeners = [];
   }
@@ -362,11 +369,16 @@ export default class SqliteActivityService implements IActivityService {
     );
   }
 
-  public getDailyDurationsInDateRange(
+  public async getDailyDurationsInDateRange(
     userId: string,
     startDate: Date,
-    endDate: Date
+    endDate: Date,
+    timezone?: string
   ): Promise<Array<[`${number}-${number}-${number}`, number]>> {
+    const offsetMinutes = timezone ? getUTCOffset(timezone) : 0;
+    const offsetMilliseconds = offsetMinutes * 60 * 1000;
+    const groupBySql = sql`strftime('%Y-%m-%d', (${activities.date} + ${offsetMilliseconds}) / 1000, 'unixepoch')`;
+
     const rows = getDb()
       .select({
         date: activities.date,
@@ -382,20 +394,16 @@ export default class SqliteActivityService implements IActivityService {
           )
         )
       )
-      .groupBy(
-        sql`strftime('%Y-%m-%d', ${activities.date} / 1000, 'unixepoch')`
-      )
+      .groupBy(groupBySql)
       .orderBy(activities.date)
       .all();
 
-    return Promise.resolve(
-      rows.map(
-        row =>
-          [new Date(row.date).toISOString().slice(0, 10), row.duration] as [
-            `${number}-${number}-${number}`,
-            number
-          ]
-      )
+    return rows.map(
+      row =>
+        [new Date(row.date).toISOString().slice(0, 10), row.duration] as [
+          `${number}-${number}-${number}`,
+          number
+        ]
     );
   }
 }

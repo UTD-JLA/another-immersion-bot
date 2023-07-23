@@ -43,6 +43,8 @@ export interface IConfig {
   speedLookbackDays?: number;
   speedLowestWeight?: number;
   colors: IColorConfig;
+  useQuickChart: boolean;
+  quickChartUrl: string;
 }
 
 export const ConfigSchema = z.object({
@@ -154,6 +156,15 @@ export const ConfigSchema = z.object({
       info: '#578bf2',
     })
     .describe('The colors to used for embeds and images'),
+  useQuickChart: z
+    .boolean()
+    .describe('Whether to use quickchart.io for chart generation')
+    .default(false),
+  quickChartUrl: z
+    .string()
+    .url()
+    .describe('The quickchart.io URL to use')
+    .default('https://quickchart.io/'),
 });
 
 // get fields and descriptions from schema
@@ -196,7 +207,9 @@ export class Config implements IConfig {
     public readonly speedCacheTtl?: number,
     public readonly speedCacheClearEvery?: number,
     public readonly speedLookbackDays?: number,
-    public readonly speedLowestWeight?: number
+    public readonly speedLowestWeight?: number,
+    public readonly useQuickChart = false,
+    public readonly quickChartUrl = 'https://quickchart.io/'
   ) {}
 
   public static getStandardConfig(): Config {
@@ -284,7 +297,9 @@ export class Config implements IConfig {
       config.speedCacheTtl,
       config.speedCacheClearEvery,
       config.speedLookbackDays,
-      config.speedLowestWeight
+      config.speedLowestWeight,
+      config.useQuickChart,
+      config.quickChartUrl
     );
   }
 }

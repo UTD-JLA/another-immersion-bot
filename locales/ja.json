@@ -293,9 +293,9 @@
       "cannot-be-more-than-n-years-in-the-past": "開始日は{0}年以上過去に設定できません。",
       "cannot-be-in-the-future": "終了日は未来に設定できません。",
       "custom-span-footer": "各棒は{0}日を表します",
-      "weekly-span-footer": "各棒は一週間を表します",
-      "monthly-span-footer": "各棒は一ヶ月を表します",
-      "yearly-span-footer": "各棒は一年を表します",
+      "weekly-span-footer": "各棒は１日を表します",
+      "monthly-span-footer": "各棒は１日を表します",
+      "yearly-span-footer": "各棒は１ヶ月を表します",
       "custom-span-description": "{0}日のグラフと統計を表示しています。",
       "weekly-span-description": "一週間のグラフと統計を表示しています。",
       "monthly-span-description": "一ヶ月のグラフと統計を表示しています。",
@@ -308,7 +308,9 @@
       "average-time": "平均時間",
       "peak-time": "ピーク時間",
       "n-minutes": "{0}分",
-      "n-minutes-on-date": "{0}分 ({1} UTC)"
+      "n-minutes-on-date": "{0}分 ({1})",
+      "span-goal-reached-ratio": "この時期の総計目標達成率",
+      "invalid-date-range": "開始日と終了日の間隔は5年以内である必要があります。期間を縮めてください。"
     }
   }
 }

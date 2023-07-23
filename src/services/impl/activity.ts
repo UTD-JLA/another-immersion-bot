@@ -112,8 +112,11 @@ export default class ActivityService implements IActivityService {
   public async getDailyDurationsInDateRange(
     userId: string,
     startDate: Date,
-    endDate: Date
+    endDate: Date,
+    timezone?: string
   ): Promise<[`${number}-${number}-${number}`, number][]> {
+    const tzQuery = timezone ? {timezone} : {};
+
     const query = Activity.aggregate([
       {
         $match: {
@@ -130,6 +133,7 @@ export default class ActivityService implements IActivityService {
             $dateToString: {
               format: '%Y-%m-%d',
               date: '$date',
+              ...tzQuery,
             },
           },
           duration: {

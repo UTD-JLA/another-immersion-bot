@@ -4,7 +4,6 @@ import {
   IAutocompletionService,
   IMaterialSourceService,
   ILoggerService,
-  IChartService,
   ILocalizationService,
   IGuildConfigService,
   IUserConfigService,
@@ -14,7 +13,6 @@ import {
 import AutocompletionService from './impl/autocomplete';
 import MaterialSourceService from './impl/materialSource';
 import LoggerService from './impl/logger';
-import ChartService from './impl/chart';
 import LocalizationService from './impl/localization';
 import GuildConfigService from './impl/guildConfig';
 import UserConfigService from './impl/userConfig';
@@ -45,8 +43,6 @@ export function registerServices(container: Container) {
   container
     .bind<IAutocompletionService>('AutocompletionService')
     .to(AutocompletionService);
-
-  container.bind<IChartService>('ChartService').to(ChartService);
 
   const dbAutocompletion = config.useSqlite
     ? SqliteMaterialSourceService
@@ -85,7 +81,6 @@ export {
   IAutocompletionService,
   IMaterialSourceService,
   ILoggerService,
-  IChartService,
   ILocalizationService,
   IGuildConfigService,
   IUserConfigService,

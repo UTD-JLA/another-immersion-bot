@@ -5,6 +5,11 @@ export function getTimezones() {
   return moment.tz.names();
 }
 
+// Returns the UTC offset in minutes
+export function getUTCOffset(timezone: string): number {
+  return moment.tz(timezone).utcOffset();
+}
+
 export async function getUserTimezone(
   userService: IUserConfigService,
   guildService: IGuildConfigService,

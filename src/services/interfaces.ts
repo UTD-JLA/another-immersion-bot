@@ -1,4 +1,3 @@
-import {Stream} from 'stream';
 import {Stringifiable} from '../util/types';
 import {Locale} from 'discord.js';
 import {IGuildConfig} from '../models/guildConfig';
@@ -19,29 +18,6 @@ export interface IAutocompletionService {
   ): Promise<ISuggestion[]>;
 
   resolveSuggestion(suggestionValue: string): Promise<string>;
-}
-
-export interface IChartService {
-  getChartPng(
-    title: string,
-    xlabel: string,
-    ylabel: string,
-    xdata: number[],
-    ydata: number[],
-    grid: boolean,
-    color: string
-  ): Promise<Stream>;
-
-  getDateBarChartPng(
-    data: {
-      x: string;
-      y: number;
-    }[],
-    color: string,
-    buckets: number,
-    horizontal: number,
-    horizontalColor: string
-  ): Promise<Stream>;
 }
 
 export type MaterialResult = {id: string; text: string};
@@ -136,7 +112,8 @@ export interface IActivityService {
   getDailyDurationsInDateRange(
     userId: string,
     startDate: Date,
-    endDate: Date
+    endDate: Date,
+    timezone?: string
   ): Promise<Array<[`${number}-${number}-${number}`, number]>>;
   on(event: 'activityCreated', listener: (activity: IActivity) => void): void;
 }
