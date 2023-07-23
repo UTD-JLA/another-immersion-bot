@@ -560,7 +560,10 @@ export default class ChartCommand implements ICommand {
           ),
         },
         {
-          name: i18n.mustLocalize('goal-reached', 'Goal Reached'),
+          name: i18n.mustLocalize(
+            'span-goal-reached-ratio',
+            'Goal Reached (Span Total)'
+          ),
           value: `${(totalGoalRatio * 100).toFixed(
             1
           )}% (${roundedTotalTime} / ${Math.round(goalTotalTime)})`,
