@@ -5,12 +5,19 @@ import {
   EmbedBuilder,
 } from 'discord.js';
 import {injectable, inject} from 'inversify';
-import {IChartService} from '../services';
 import {AttachmentBuilder} from 'discord.js';
 import {IConfig, IColorConfig} from '../config';
 import {IUserConfigService, IGuildConfigService} from '../services';
-import {parseTimeWithUserTimezone, calculateDeltaInDays} from '../util/time';
-import {IActivityService, ILocalizationService} from '../services/interfaces';
+import {
+  parseTimeWithUserTimezone,
+  calculateDeltaInDays,
+  getUserTimezone,
+} from '../util/time';
+import {
+  IActivityService,
+  ILocalizationService,
+  ILoggerService,
+} from '../services/interfaces';
 import {Stream} from 'stream';
 import {request} from 'http';
 import {request as httpsRequest} from 'https';
@@ -22,24 +29,28 @@ export default class ChartCommand implements ICommand {
   private readonly _guildService: IGuildConfigService;
   private readonly _activityService: IActivityService;
   private readonly _localizationService: ILocalizationService;
+  private readonly _logger: ILoggerService;
   private readonly _url: URL;
   private readonly _useQuickChart: boolean;
 
   constructor(
-    @inject('ChartService') chartService: IChartService,
     @inject('Config') config: IConfig,
     @inject('UserConfigService') userService: IUserConfigService,
     @inject('GuildConfigService') guildService: IGuildConfigService,
     @inject('ActivityService') activityService: IActivityService,
-    @inject('LocalizationService') localizationService: ILocalizationService
+    @inject('LocalizationService') localizationService: ILocalizationService,
+    @inject('LoggerService') loggerService: ILoggerService
   ) {
-    this._url = new URL(config.chartServiceUrl);
-    this._useQuickChart = true; //config.useQuickChart;
+    this._url = new URL(
+      config.useQuickChart ? config.quickChartUrl : config.chartServiceUrl
+    );
+    this._useQuickChart = config.useQuickChart;
     this._colors = config.colors;
     this._userService = userService;
     this._guildService = guildService;
     this._activityService = activityService;
     this._localizationService = localizationService;
+    this._logger = loggerService;
   }
 
   public get data() {
@@ -158,12 +169,6 @@ export default class ChartCommand implements ICommand {
       horizontal_color: horizontalColor,
     });
 
-    const labels = data.map(d => d.x);
-    const values = data.map(d => d.y);
-
-    console.log(labels);
-    console.log(values);
-
     return new Promise<Stream>((resolve, reject) => {
       const req = request(
         {
@@ -193,6 +198,108 @@ export default class ChartCommand implements ICommand {
 
       req.on('error', reject);
       req.write(body);
+      req.end();
+    });
+  }
+
+  private async _getQuickChartPng(
+    dates: string[],
+    values: number[],
+    goal: number
+  ): Promise<Stream> {
+    return new Promise<Stream>((resolve, reject) => {
+      const req = httpsRequest(
+        {
+          hostname: this._url.hostname,
+          path: '/chart',
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        },
+        res => {
+          if (res.statusCode !== 200) {
+            this._logger.error(`Chart service returned ${res.statusCode}`);
+            reject(new Error(`Chart service returned ${res.statusCode}`));
+            return;
+          }
+
+          resolve(res);
+        }
+      );
+
+      req.on('error', reject);
+      req.write(
+        JSON.stringify({
+          version: '2',
+          backgroundColor: '#232428',
+          width: 500,
+          height: 300,
+          devicePixelRatio: 1.0,
+          format: 'png',
+          chart: {
+            type: 'bar',
+            data: {
+              labels: dates,
+              datasets: [
+                {
+                  data: values,
+                  backgroundColor: this._colors.secondary,
+                },
+              ],
+            },
+            options: {
+              legend: {
+                display: false,
+              },
+              layout: {
+                padding: {
+                  left: 10,
+                  right: 10,
+                  top: 30,
+                  bottom: 30,
+                },
+              },
+              scales: {
+                xAxes: [
+                  {
+                    ticks: {
+                      fontColor: '#9e9e9e',
+                    },
+                    gridLines: {
+                      display: false,
+                    },
+                  },
+                ],
+                yAxes: [
+                  {
+                    ticks: {
+                      fontColor: '#9e9e9e',
+                    },
+                    gridLines: {
+                      color: '#2B2D31',
+                      zeroLineColor: '#9e9e9e',
+                    },
+                  },
+                ],
+              },
+              annotation: {
+                annotations: [
+                  {
+                    type: 'line',
+                    mode: 'horizontal',
+                    value: goal,
+                    scaleID: 'y-axis-0',
+                    borderColor: this._colors.primary,
+                    borderWidth: 1,
+                    borderDash: [5, 5],
+                  },
+                ],
+              },
+            },
+          },
+        })
+      );
       req.end();
     });
   }
@@ -295,10 +402,18 @@ export default class ChartCommand implements ICommand {
       beginningDate.setFullYear(beginningDate.getFullYear() - 1);
     }
 
+    const timezone = await getUserTimezone(
+      this._userService,
+      this._guildService,
+      interaction.user.id,
+      interaction.guildId
+    );
+
     const activities = await this._activityService.getDailyDurationsInDateRange(
       interaction.user.id,
       beginningDate,
-      endDate
+      endDate,
+      timezone
     );
 
     const customRangeDelta = Math.ceil(
@@ -320,7 +435,6 @@ export default class ChartCommand implements ICommand {
     // how many chars of the date (YYYY-MM-DD) are significant
     // everyhing except for 'yearly' is YYYY-MM-DD
     const significantDatePart = effectiveSpan === 'yearly' ? 7 : 10;
-
     const buckets = new Map<string, number>();
 
     for (const [dateString, minutes] of activities) {
@@ -360,108 +474,120 @@ export default class ChartCommand implements ICommand {
         [[], []] as [string[], number[]]
       );
 
-    const req = httpsRequest(
-      {
-        hostname: 'quickchart.io',
-        path: '/chart',
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      },
-      res => {
-        if (res.statusCode !== 200) {
-          console.log(res.statusCode);
-          console.log(res.statusMessage);
-          console.log(res.headers);
-          return;
-        }
-
-        const chunks: Buffer[] = [];
-
-        res.on('data', chunk => {
-          chunks.push(chunk);
-        });
-
-        res.on('end', () => {
-          const buffer = Buffer.concat(chunks);
-          const attachment = new AttachmentBuilder(buffer).setName('chart.png');
-          const embed = new EmbedBuilder().setImage('attachment://chart.png');
-
-          interaction.editReply({
-            embeds: [embed],
-            files: [attachment],
-          });
-        });
-      }
-    );
-
     const dailyGoal = await this._userService.getDailyGoal(interaction.user.id);
     const daysPerBar = Math.ceil(
       calculateDeltaInDays(endDate, beginningDate) / x.length
     );
     const goalPerBar = (dailyGoal ?? 0) * daysPerBar;
+    const chart = await this._getQuickChartPng(x, y, goalPerBar);
 
-    req.on('error', err => {
-      console.log(err);
+    const maxIndex = y.reduce((acc, curr, index) => {
+      return curr > y[acc] ? index : acc;
+    }, 0);
+
+    const averageTime = Math.round(
+      y.reduce((a, b) => a + b, 0) / customRangeDelta
+    );
+
+    const totalTime = y.reduce((a, b) => a + b, 0);
+    const peakTime = y[maxIndex];
+    const peakDay = x[maxIndex];
+    const roundedPeakTime = Math.round(peakTime);
+    const roundedAverageTime = Math.round(averageTime);
+    const roundedTotalTime = Math.round(totalTime);
+    const goalTotalTime = goalPerBar * x.length;
+    const totalGoalRatio = totalTime / goalTotalTime;
+
+    const spanTitle =
+      span === 'custom'
+        ? i18n.mustLocalize('custom-span-title', 'Custom Graph')
+        : span === 'yearly'
+        ? i18n.mustLocalize('yearly-span-title', 'Yearly Graph')
+        : span === 'monthly'
+        ? i18n.mustLocalize('monthly-span-title', 'Monthly Graph')
+        : i18n.mustLocalize('weekly-span-title', 'Weekly Graph');
+
+    const embedDescription =
+      span === 'custom'
+        ? i18n.mustLocalize(
+            'custom-span-description',
+            `Below is a chart of your logged time for the last ${customRangeDelta.toPrecision(
+              2
+            )} days along with some statistics!`,
+            customRangeDelta.toPrecision(2)
+          )
+        : span === 'yearly'
+        ? i18n.mustLocalize(
+            'yearly-span-description',
+            'Below is a chart of your logged time for the last year along with some statistics!'
+          )
+        : span === 'monthly'
+        ? i18n.mustLocalize(
+            'monthly-span-description',
+            'Below is a chart of your logged time for the last month along with some statistics!'
+          )
+        : i18n.mustLocalize(
+            'weekly-span-description',
+            'Below is a chart of your logged time for the last week along with some statistics!'
+          );
+
+    // if significantDatePart is 7, we are grouping by month, else by day
+    const embedFooter =
+      significantDatePart === 7
+        ? i18n.mustLocalize(
+            'yearly-span-footer',
+            'Each bar represents one month.'
+          )
+        : i18n.mustLocalize(
+            'monthly-span-footer',
+            'Each bar represents one day.'
+          );
+
+    const attachment = new AttachmentBuilder(chart).setName('chart.png');
+    const embed = new EmbedBuilder()
+      .setTitle(spanTitle)
+      .setDescription(embedDescription)
+      .setFields(
+        {
+          name: i18n.mustLocalize('total-minutes', 'Total Minutes'),
+          value: i18n.mustLocalize(
+            'n-minutes',
+            `${roundedTotalTime} minutes`,
+            roundedTotalTime
+          ),
+        },
+        {
+          name: i18n.mustLocalize('average-time', 'Average Time'),
+          value: i18n.mustLocalize(
+            'n-minutes',
+            `${roundedAverageTime} minutes`,
+            roundedAverageTime
+          ),
+        },
+        {
+          name: i18n.mustLocalize('peak-time', 'Peak Time'),
+          value: i18n.mustLocalize(
+            'n-minutes-on-date',
+            `${roundedPeakTime} minutes on ${peakDay}`,
+            roundedPeakTime,
+            peakDay
+          ),
+        },
+        {
+          name: i18n.mustLocalize('goal-reached', 'Goal Reached'),
+          value: `${(totalGoalRatio * 100).toFixed(
+            1
+          )}% (${roundedTotalTime} / ${Math.round(goalTotalTime)})`,
+        }
+      )
+      .setImage('attachment://chart.png')
+      .setColor(this._colors.primary)
+      .setFooter({text: embedFooter});
+
+    await interaction.editReply({
+      embeds: [embed],
+      files: [attachment],
     });
-
-    const data = {
-      version: '2',
-      backgroundColor: 'transparent',
-      width: 500,
-      height: 300,
-      devicePixelRatio: 1.0,
-      format: 'png',
-      chart: {
-        type: 'bar',
-        data: {
-          labels: x,
-          datasets: [
-            {
-              data: y,
-              backgroundColor: this._colors.secondary,
-            },
-          ],
-        },
-        options: {
-          legend: {
-            display: false,
-          },
-          scales: {
-            xAxes: [
-              {
-                ticks: {
-                  fontColor: '#777',
-                },
-              },
-            ],
-            yAxes: [
-              {
-                ticks: {
-                  fontColor: '#777',
-                },
-              },
-            ],
-          },
-          annotation: {
-            annotations: [
-              {
-                type: 'line',
-                mode: 'horizontal',
-                value: goalPerBar,
-                scaleID: 'y-axis-0',
-                borderColor: this._colors.primary,
-                borderWidth: 3,
-              },
-            ],
-          },
-        },
-      },
-    };
-
-    req.write(JSON.stringify(data));
-    req.end();
   }
 
   public async execute(interaction: ChatInputCommandInteraction) {
@@ -572,8 +698,20 @@ export default class ChartCommand implements ICommand {
       nBuckets = Math.max(Math.min(nBuckets, maxBuckets), 1);
     }
 
+    const timezone = await getUserTimezone(
+      this._userService,
+      this._guildService,
+      interaction.user.id,
+      interaction.guildId
+    );
+
     const activitiesPromise = this._activityService
-      .getDailyDurationsInDateRange(interaction.user.id, beginningDate, endDate)
+      .getDailyDurationsInDateRange(
+        interaction.user.id,
+        beginningDate,
+        endDate,
+        timezone
+      )
       .then(a =>
         a.map(([dateString, minutes]) => ({
           _id: dateString as string,
@@ -722,11 +860,9 @@ export default class ChartCommand implements ICommand {
       .setColor(this._colors.primary)
       .setFooter({text: embedFooter});
 
-    const msg = await interaction.editReply({
+    await interaction.editReply({
       embeds: [embed],
       files: [attachment],
     });
-
-    console.log(msg.embeds[0].image?.url);
   }
 }

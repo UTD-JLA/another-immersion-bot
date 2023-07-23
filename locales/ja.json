@@ -308,7 +308,8 @@
       "average-time": "平均時間",
       "peak-time": "ピーク時間",
       "n-minutes": "{0}分",
-      "n-minutes-on-date": "{0}分 ({1} UTC)"
+      "n-minutes-on-date": "{0}分 ({1} UTC)",
+      "goal-reached": "目標達成率"
     }
   }
 }
