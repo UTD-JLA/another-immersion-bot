@@ -207,6 +207,21 @@ export default class ChartCommand implements ICommand {
     values: number[],
     goal: number
   ): Promise<Stream> {
+    const annotations =
+      goal > 0
+        ? [
+            {
+              type: 'line',
+              mode: 'horizontal',
+              value: goal,
+              scaleID: 'y-axis-0',
+              borderColor: this._colors.primary,
+              borderWidth: 1,
+              borderDash: [5, 5],
+            },
+          ]
+        : [];
+
     return new Promise<Stream>((resolve, reject) => {
       const req = httpsRequest(
         {
@@ -283,19 +298,7 @@ export default class ChartCommand implements ICommand {
                   },
                 ],
               },
-              annotation: {
-                annotations: [
-                  {
-                    type: 'line',
-                    mode: 'horizontal',
-                    value: goal,
-                    scaleID: 'y-axis-0',
-                    borderColor: this._colors.primary,
-                    borderWidth: 1,
-                    borderDash: [5, 5],
-                  },
-                ],
-              },
+              annotation: {annotations},
             },
           },
         })
@@ -558,20 +561,23 @@ export default class ChartCommand implements ICommand {
             roundedPeakTime,
             peakDay
           ),
-        },
-        {
-          name: i18n.mustLocalize(
-            'span-goal-reached-ratio',
-            'Goal Reached (Span Total)'
-          ),
-          value: `${(totalGoalRatio * 100).toFixed(
-            1
-          )}% (${roundedTotalTime} / ${Math.round(goalTotalTime)})`,
         }
       )
       .setImage('attachment://chart.png')
       .setColor(this._colors.primary)
       .setFooter({text: embedFooter});
+
+    if (goalPerBar > 0) {
+      embed.addFields({
+        name: i18n.mustLocalize(
+          'span-goal-reached-ratio',
+          'Goal Reached (Span Total)'
+        ),
+        value: `${(totalGoalRatio * 100).toFixed(
+          1
+        )}% (${roundedTotalTime} / ${Math.round(goalTotalTime)})`,
+      });
+    }
 
     await interaction.editReply({
       embeds: [embed],
