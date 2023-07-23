@@ -128,6 +128,18 @@ Variables from the config file will precede environment variables. Current confi
     <td>0.9</td>
     <td>number (0-1)</td>
   </tr>
+  <tr>
+    <td>useQuickChart</td>
+    <td>Use QuickChart API to generate graphs instead of the py-server</td>
+    <td>false</td>
+    <td>boolean</td>
+  </tr>
+  <tr>
+    <td>quickChartUrl</td>
+    <td>URL to QuickChart API</td>
+    <td>https://quickchart.io/</td>
+    <td>string</td>
+  </tr>
 </table>
 
 #### logLevel
