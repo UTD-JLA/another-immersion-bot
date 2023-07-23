@@ -367,26 +367,12 @@ export default class ChartCommand implements ICommand {
           ? parsedBeginningDate
           : parsedEndDate;
 
-      // Don't allow more than 100 years in the past
-      const hundredYearsAgo = new Date();
-      hundredYearsAgo.setFullYear(hundredYearsAgo.getFullYear() - 100);
-      if (actualBeginningDate.getTime() < hundredYearsAgo.getTime()) {
+      // Don't allow deltas of over 5 years
+      if (calculateDeltaInDays(actualEndDate, actualBeginningDate) > 365 * 5) {
         await interaction.editReply({
           content: i18n.mustLocalize(
-            'cannot-be-more-than-n-years-in-the-past',
-            'Beginning date cannot be more than 100 years in the past',
-            100
-          ),
-        });
-        return;
-      }
-
-      // Don't allow graphing the future
-      if (actualEndDate.getTime() > new Date().getTime()) {
-        await interaction.editReply({
-          content: i18n.mustLocalize(
-            'cannot-be-in-the-future',
-            'End date cannot be in the future'
+            'invalid-date-range',
+            'Date range must be less than 5 years'
           ),
         });
         return;
