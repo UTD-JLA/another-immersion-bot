@@ -1,4 +1,3 @@
-import {Stream} from 'stream';
 import {Stringifiable} from '../util/types';
 import {Locale} from 'discord.js';
 import {IGuildConfig} from '../models/guildConfig';
