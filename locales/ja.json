@@ -28,7 +28,8 @@
         "video-title": "動画タイトル",
         "duration": "視聴時間",
         "auto-tagged": "自動付きタグ",
-        "invalid-date": "入力された日付はただしくありません。"
+        "invalid-date": "入力された日付はただしくありません。",
+        "dont-use-time-param": "時間パラメータ「t」は使わないで"
       }
     },
     "manual": {

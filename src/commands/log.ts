@@ -3,6 +3,9 @@ import {
   AutocompleteInteraction,
   EmbedBuilder,
   Locale,
+  ButtonBuilder,
+  ButtonStyle,
+  ActionRowBuilder,
 } from 'discord.js';
 import {ICommand} from '.';
 import {ActivityType, ActivityUnit, IActivity} from '../models/activity';
@@ -344,39 +347,99 @@ export default class LogCommand implements ICommand {
       type: ActivityType.Listening,
     });
 
+    const fields = [
+      {
+        name: i18n.mustLocalize('video-channel', 'Channel'),
+        value: vidInfo.uploaderName,
+      },
+      {
+        name: i18n.mustLocalize('video-title', 'Video'),
+        value: vidInfo.title,
+      },
+      {
+        name: i18n.mustLocalize('duration', 'Duration'),
+        value:
+          localizeDuration(
+            activity.duration,
+            interaction.locale,
+            this._localizationService
+          ) + ` (${timeIsFrom})`,
+      },
+      {
+        name: i18n.mustLocalize('auto-tagged', 'Auto-tagged'),
+        value: activity.tags?.join('\n') ?? 'None',
+      },
+    ];
+
     const embed = new EmbedBuilder()
       .setTitle(i18n.mustLocalize('activity-logged', 'Activity Logged!'))
-      .setFields(
-        {
-          name: i18n.mustLocalize('video-channel', 'Channel'),
-          value: vidInfo.uploaderName,
-        },
-        {
-          name: i18n.mustLocalize('video-title', 'Video'),
-          value: vidInfo.title,
-        },
-        {
-          name: i18n.mustLocalize('duration', 'Duration'),
-          value:
-            localizeDuration(
-              activity.duration,
-              interaction.locale,
-              this._localizationService
-            ) + ` (${timeIsFrom})`,
-        },
-        {
-          name: i18n.mustLocalize('auto-tagged', 'Auto-tagged'),
-          value: activity.tags?.join('\n') ?? 'None',
-        }
-      )
+      .setFields(fields)
       .setFooter({text: `ID: ${activity.id}`})
       .setImage(vidInfo.thumbnail)
       .setTimestamp(activity.date)
       .setColor(this._config.colors.success);
 
-    await interaction.editReply({
-      embeds: [embed],
-    });
+    // allow user to redo time with video duration if they used the time param
+    // but didn't mean for that to be the duration
+    if (!enteredDuration && vidInfo.seekTime) {
+      const dontUseTimeParamButton = new ButtonBuilder()
+        .setCustomId('dont-use-time-param')
+        .setLabel(
+          i18n.mustLocalize('dont-use-time-param', 'Don\'t use "t" param')
+        )
+        .setStyle(ButtonStyle.Primary);
+
+      const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+        dontUseTimeParamButton
+      );
+
+      const response = await interaction.editReply({
+        embeds: [embed],
+        components: [row],
+      });
+
+      try {
+        await response.awaitMessageComponent({
+          filter: i =>
+            i.customId === 'dont-use-time-param' &&
+            i.user.id === interaction.user.id,
+          time: 60 * 1000,
+        });
+      } catch {
+        // timeout
+        return;
+      }
+
+      await this._activityService.deleteActivityById(activity.id);
+
+      const {id: newId} = await this._activityService.createActivity({
+        duration: vidInfo.duration / 60,
+        name: activity.name,
+        tags: activity.tags,
+        type: activity.type,
+        url: activity.url,
+        userId: activity.userId,
+        date: activity.date,
+      });
+
+      fields[2].value = localizeDuration(
+        vidInfo.duration / 60,
+        interaction.locale,
+        this._localizationService
+      );
+
+      embed.setFooter({text: `ID: ${newId}`});
+      embed.setFields(fields);
+
+      await interaction.editReply({
+        embeds: [embed],
+        components: [],
+      });
+    } else {
+      await interaction.editReply({
+        embeds: [embed],
+      });
+    }
   }
 
   private async _executeAnime(
