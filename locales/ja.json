@@ -30,6 +30,7 @@
         "auto-tagged": "自動付きタグ",
         "invalid-date": "入力された日付はただしくありません。",
         "dont-use-time-param": "時間パラメータ「t」は使わないで",
+        "use-time-param-as-starting-time": "時間パラメータ「t」を開始時間として使う",
         "video-link": "動画リンク"
       }
     },

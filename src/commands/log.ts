@@ -397,7 +397,20 @@ export default class LogCommand implements ICommand {
         )
         .setStyle(ButtonStyle.Primary);
 
-      row.addComponents(dontUseTimeParamButton);
+      const useTimeParamAsStartingTimeButton = new ButtonBuilder()
+        .setCustomId('use-time-param-as-starting-time')
+        .setLabel(
+          i18n.mustLocalize(
+            'use-time-param-as-starting-time',
+            'Use "t" param as starting time'
+          )
+        )
+        .setStyle(ButtonStyle.Primary);
+
+      row.addComponents(
+        dontUseTimeParamButton,
+        useTimeParamAsStartingTimeButton
+      );
 
       const response = await interaction.editReply({
         embeds: [embed],
@@ -409,7 +422,8 @@ export default class LogCommand implements ICommand {
       try {
         buttonInteraction = await response.awaitMessageComponent({
           filter: i =>
-            i.customId === 'dont-use-time-param' &&
+            (i.customId === 'dont-use-time-param' ||
+              i.customId === 'use-time-param-as-starting-time') &&
             i.user.id === interaction.user.id,
           time: 60 * 1000,
           componentType: ComponentType.Button,
@@ -420,11 +434,15 @@ export default class LogCommand implements ICommand {
       }
 
       await buttonInteraction.deferUpdate();
-
       await this._activityService.deleteActivityById(activity.id);
 
+      const newDuration =
+        buttonInteraction.customId === 'dont-use-time-param'
+          ? vidInfo.duration / 60
+          : (vidInfo.duration - vidInfo.seekTime) / 60;
+
       const {id: newId} = await this._activityService.createActivity({
-        duration: vidInfo.duration / 60,
+        duration: newDuration,
         name: activity.name,
         tags: activity.tags,
         type: activity.type,
@@ -434,7 +452,7 @@ export default class LogCommand implements ICommand {
       });
 
       fields[2].value = localizeDuration(
-        vidInfo.duration / 60,
+        newDuration,
         interaction.locale,
         this._localizationService
       );
