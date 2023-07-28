@@ -429,7 +429,12 @@ export default class LogCommand implements ICommand {
           componentType: ComponentType.Button,
         });
       } catch {
-        // timeout
+        row.setComponents(linkButton);
+
+        await interaction.editReply({
+          embeds: [embed],
+          components: [row],
+        });
         return;
       }
 
