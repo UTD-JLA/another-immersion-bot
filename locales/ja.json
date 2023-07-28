@@ -29,7 +29,8 @@
         "duration": "視聴時間",
         "auto-tagged": "自動付きタグ",
         "invalid-date": "入力された日付はただしくありません。",
-        "dont-use-time-param": "時間パラメータ「t」は使わないで"
+        "dont-use-time-param": "時間パラメータ「t」は使わないで",
+        "video-link": "動画リンク"
       }
     },
     "manual": {
