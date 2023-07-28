@@ -6,6 +6,8 @@ import {
   ButtonBuilder,
   ButtonStyle,
   ActionRowBuilder,
+  ComponentType,
+  ButtonInteraction,
 } from 'discord.js';
 import {ICommand} from '.';
 import {ActivityType, ActivityUnit, IActivity} from '../models/activity';
@@ -49,7 +51,6 @@ export default class LogCommand implements ICommand {
   private readonly _userSpeedService: IUserSpeedService;
   private readonly _config: IConfig;
 
-  // TODO: make configurable
   private readonly _subprocessLock: LimitedResourceLock;
 
   private static readonly KNOWN_HOST_TAGS = new Map<string, string>([
@@ -265,8 +266,8 @@ export default class LogCommand implements ICommand {
     await interaction.deferReply();
 
     const url = interaction.options.getString('url', true);
-
     const enteredDate = interaction.options.getString('date', false);
+
     const date = enteredDate
       ? await parseTimeWithUserTimezone(
           this._userConfigService,
@@ -379,6 +380,13 @@ export default class LogCommand implements ICommand {
       .setTimestamp(activity.date)
       .setColor(this._config.colors.success);
 
+    const linkButton = new ButtonBuilder()
+      .setLabel(i18n.mustLocalize('video-link', 'Video Link'))
+      .setStyle(ButtonStyle.Link)
+      .setURL(activity.url!);
+
+    const row = new ActionRowBuilder<ButtonBuilder>().addComponents(linkButton);
+
     // allow user to redo time with video duration if they used the time param
     // but didn't mean for that to be the duration
     if (!enteredDuration && vidInfo.seekTime) {
@@ -389,26 +397,29 @@ export default class LogCommand implements ICommand {
         )
         .setStyle(ButtonStyle.Primary);
 
-      const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-        dontUseTimeParamButton
-      );
+      row.addComponents(dontUseTimeParamButton);
 
       const response = await interaction.editReply({
         embeds: [embed],
         components: [row],
       });
 
+      let buttonInteraction: ButtonInteraction;
+
       try {
-        await response.awaitMessageComponent({
+        buttonInteraction = await response.awaitMessageComponent({
           filter: i =>
             i.customId === 'dont-use-time-param' &&
             i.user.id === interaction.user.id,
           time: 60 * 1000,
+          componentType: ComponentType.Button,
         });
       } catch {
         // timeout
         return;
       }
+
+      await buttonInteraction.deferUpdate();
 
       await this._activityService.deleteActivityById(activity.id);
 
@@ -431,13 +442,16 @@ export default class LogCommand implements ICommand {
       embed.setFooter({text: `ID: ${newId}`});
       embed.setFields(fields);
 
+      row.setComponents(linkButton);
+
       await interaction.editReply({
         embeds: [embed],
-        components: [],
+        components: [row],
       });
     } else {
       await interaction.editReply({
         embeds: [embed],
+        components: [row],
       });
     }
   }

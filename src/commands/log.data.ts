@@ -279,7 +279,6 @@ export const getCommandBuilder = (localizationService: ILocalizationService) =>
             .setRequired(false)
         )
     )
-
     .addSubcommand(subcommand =>
       subcommand
         .setName('manual')
