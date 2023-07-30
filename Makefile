@@ -21,6 +21,8 @@ bot: src/**/*.ts src/*.ts
 
 	cp node_modules/better-sqlite3/build/Release/better_sqlite3.node dist/better_sqlite3.node
 
+	echo "$(VERSION)" > dist/VERSION.txt
+
 py-server: py-server/main.py
 	python3 -m venv $(VENV_DIR)
 	$(VENV_DIR)/bin/pip install -r ./py-server/requirements.txt

@@ -13,14 +13,9 @@ import {
   calculateDeltaInDays,
   getUserTimezone,
 } from '../util/time';
-import {
-  IActivityService,
-  ILocalizationService,
-  ILoggerService,
-} from '../services/interfaces';
+import {IActivityService, ILocalizationService} from '../services/interfaces';
 import {Stream} from 'stream';
-import {request} from 'http';
-import {request as httpsRequest} from 'https';
+import {HttpClient} from '../util/httpClient';
 
 @injectable()
 export default class ChartCommand implements ICommand {
@@ -29,17 +24,16 @@ export default class ChartCommand implements ICommand {
   private readonly _guildService: IGuildConfigService;
   private readonly _activityService: IActivityService;
   private readonly _localizationService: ILocalizationService;
-  private readonly _logger: ILoggerService;
   private readonly _url: URL;
   private readonly _useQuickChart: boolean;
+  private readonly _httpClient: HttpClient;
 
   constructor(
     @inject('Config') config: IConfig,
     @inject('UserConfigService') userService: IUserConfigService,
     @inject('GuildConfigService') guildService: IGuildConfigService,
     @inject('ActivityService') activityService: IActivityService,
-    @inject('LocalizationService') localizationService: ILocalizationService,
-    @inject('LoggerService') loggerService: ILoggerService
+    @inject('LocalizationService') localizationService: ILocalizationService
   ) {
     this._url = new URL(
       config.useQuickChart ? config.quickChartUrl : config.chartServiceUrl
@@ -50,7 +44,7 @@ export default class ChartCommand implements ICommand {
     this._guildService = guildService;
     this._activityService = activityService;
     this._localizationService = localizationService;
-    this._logger = loggerService;
+    this._httpClient = new HttpClient();
   }
 
   public get data() {
@@ -151,7 +145,7 @@ export default class ChartCommand implements ICommand {
       ) as SlashCommandBuilder;
   }
 
-  private _getDateBarChartPng(
+  private async _getDateBarChartPng(
     data: {
       x: string;
       y: number;
@@ -169,37 +163,13 @@ export default class ChartCommand implements ICommand {
       horizontal_color: horizontalColor,
     });
 
-    return new Promise<Stream>((resolve, reject) => {
-      const req = request(
-        {
-          hostname: this._url.hostname,
-          port: this._url.port,
-          path: '/easyDateBar',
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Content-Length': body.length,
-          },
-        },
-        res => {
-          if (res.headers['content-type'] !== 'image/png') {
-            reject(
-              new Error(`Chart service returned ${res.headers['content-type']}`)
-            );
-          }
-
-          if (res.statusCode !== 200) {
-            reject(new Error(`Chart service returned ${res.statusCode}`));
-          }
-
-          resolve(res);
-        }
-      );
-
-      req.on('error', reject);
-      req.write(body);
-      req.end();
-    });
+    const url = new URL('/easyDateBar', this._url);
+    const headers = {
+      'Content-Type': 'application/json',
+      'Content-Length': body.length,
+    };
+    const response = await this._httpClient.post(url, body, {headers});
+    return response.raw();
   }
 
   private async _getQuickChartPng(
@@ -222,89 +192,71 @@ export default class ChartCommand implements ICommand {
           ]
         : [];
 
-    return new Promise<Stream>((resolve, reject) => {
-      const req = httpsRequest(
-        {
-          hostname: this._url.hostname,
-          path: '/chart',
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+    const body = JSON.stringify({
+      version: '2',
+      backgroundColor: '#232428',
+      width: 500,
+      height: 300,
+      devicePixelRatio: 1.0,
+      format: 'png',
+      chart: {
+        type: 'bar',
+        data: {
+          labels: dates,
+          datasets: [
+            {
+              data: values,
+              backgroundColor: this._colors.secondary,
+            },
+          ],
         },
-        res => {
-          if (res.statusCode !== 200) {
-            this._logger.error(`Chart service returned ${res.statusCode}`);
-            reject(new Error(`Chart service returned ${res.statusCode}`));
-            return;
-          }
-
-          resolve(res);
-        }
-      );
-
-      req.on('error', reject);
-      req.write(
-        JSON.stringify({
-          version: '2',
-          backgroundColor: '#232428',
-          width: 500,
-          height: 300,
-          devicePixelRatio: 1.0,
-          format: 'png',
-          chart: {
-            type: 'bar',
-            data: {
-              labels: dates,
-              datasets: [
-                {
-                  data: values,
-                  backgroundColor: this._colors.secondary,
-                },
-              ],
-            },
-            options: {
-              legend: {
-                display: false,
-              },
-              layout: {
-                padding: {
-                  left: 10,
-                  right: 10,
-                  top: 30,
-                  bottom: 30,
-                },
-              },
-              scales: {
-                xAxes: [
-                  {
-                    ticks: {
-                      fontColor: '#9e9e9e',
-                    },
-                    gridLines: {
-                      display: false,
-                    },
-                  },
-                ],
-                yAxes: [
-                  {
-                    ticks: {
-                      fontColor: '#9e9e9e',
-                    },
-                    gridLines: {
-                      color: '#2B2D31',
-                      zeroLineColor: '#9e9e9e',
-                    },
-                  },
-                ],
-              },
-              annotation: {annotations},
+        options: {
+          legend: {
+            display: false,
+          },
+          layout: {
+            padding: {
+              left: 10,
+              right: 10,
+              top: 30,
+              bottom: 30,
             },
           },
-        })
-      );
-      req.end();
+          scales: {
+            xAxes: [
+              {
+                ticks: {
+                  fontColor: '#9e9e9e',
+                },
+                gridLines: {
+                  display: false,
+                },
+              },
+            ],
+            yAxes: [
+              {
+                ticks: {
+                  fontColor: '#9e9e9e',
+                },
+                gridLines: {
+                  color: '#2B2D31',
+                  zeroLineColor: '#9e9e9e',
+                },
+              },
+            ],
+          },
+          annotation: {annotations},
+        },
+      },
     });
+
+    const url = new URL('/chart', this._url);
+    const headers = {
+      'Content-Type': 'application/json',
+      'Content-Length': body.length,
+    };
+    const response = await this._httpClient.post(url, body, {headers});
+    return response.raw();
   }
 
   // Generate chart using quickchart.io instead of the chart service
