@@ -281,6 +281,62 @@ export const getCommandBuilder = (localizationService: ILocalizationService) =>
     )
     .addSubcommand(subcommand =>
       subcommand
+        .setName('website')
+        .setNameLocalizations(
+          localizationService.getAllLocalizations('log.website.name')
+        )
+        .setDescription('Log a website')
+        .setDescriptionLocalizations(
+          localizationService.getAllLocalizations('log.website.description')
+        )
+        .addStringOption(option =>
+          option
+            .setName('url')
+            .setNameLocalizations(
+              localizationService.getAllLocalizations('log.website.url.name')
+            )
+            .setDescription('URL of the website')
+            .setDescriptionLocalizations(
+              localizationService.getAllLocalizations(
+                'log.website.url.description'
+              )
+            )
+            .setRequired(true)
+        )
+        .addNumberOption(option =>
+          option
+            .setName('duration')
+            .setNameLocalizations(
+              localizationService.getAllLocalizations(
+                'log.website.duration.name'
+              )
+            )
+            .setDescription('Duration of the activity in minutes')
+            .setDescriptionLocalizations(
+              localizationService.getAllLocalizations(
+                'log.website.duration.description'
+              )
+            )
+            .setMinValue(0)
+            .setRequired(true)
+        )
+        .addStringOption(option =>
+          option
+            .setName('date')
+            .setNameLocalizations(
+              localizationService.getAllLocalizations('log.website.date.name')
+            )
+            .setDescription('Date/time of the activity')
+            .setDescriptionLocalizations(
+              localizationService.getAllLocalizations(
+                'log.website.date.description'
+              )
+            )
+            .setRequired(false)
+        )
+    )
+    .addSubcommand(subcommand =>
+      subcommand
         .setName('manual')
         .setNameLocalizations(
           localizationService.getAllLocalizations('log.manual.name')

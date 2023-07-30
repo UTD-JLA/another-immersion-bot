@@ -127,6 +127,28 @@
         "duration-source-reading-speed-config": "読書時間は設定した読書速度（字/分）から計算されました。間違いがある場合は、`読書時間`という引数を使ってください。",
         "duration-source-page-speed-config": "読書時間は設定したページ速度（ページ/分）から計算されました。間違いがある場合は、`読書時間`という引数を使ってください。"
       }
+    },
+    "website": {
+      "name": "ウェブサイト",
+      "description": "ウェブサイトの閲覧時間をもっと簡単に記録",
+      "url.name": "url",
+      "url.description": "閲覧したウェブサイトのURLを入力してください",
+      "duration.name": "閲覧時間",
+      "duration.description": "閲覧時間(分)を入力してください",
+      "date.name": "日付",
+      "date.description": "ウェブサイトを閲覧した日付を入力してください",
+      "messages": {
+        "invalid-date": "入力された日付はただしくありません。",
+        "activity-logged": "アクティビティを記録しました！",
+        "website": "ウェブサイト",
+        "duration": "閲覧時間",
+        "kanji-level": "漢字レベル",
+        "unique-kanji": "漢字数",
+        "total-characters": "総文字数",
+        "description": "詳細",
+        "tags": "タグ",
+        "link": "リンク"
+      }
     }
   },
   "undo": {

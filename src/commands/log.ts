@@ -27,6 +27,9 @@ import {getUserTimezone, parseTimeWithUserTimezone} from '../util/time';
 import {getCommandBuilder} from './log.data';
 import {IActivityService, IUserSpeedService} from '../services/interfaces';
 import {localizeDuration} from '../util/generalLocalization';
+import {parse as parseHtml, Node, HTMLElement} from 'node-html-parser';
+import {HttpClient} from '../util/httpClient';
+import {isJapanese} from 'wanakana';
 
 interface VideoURLExtractedInfo {
   title: string;
@@ -40,6 +43,50 @@ interface VideoURLExtractedInfo {
   description: string;
 }
 
+interface WebsiteURLExtractedInfo {
+  title: string;
+  tags: string[];
+  description: string | null;
+  img: string | null;
+  favicon: string | null;
+  jlptLevel?: 1 | 2 | 3 | 4 | 5;
+  jlptStats: {
+    N1: number;
+    N2: number;
+    N3: number;
+    N4: number;
+    N5: number;
+  };
+  gradeStats: {
+    G1: number;
+    G2: number;
+    G3: number;
+    G4: number;
+    G5: number;
+    G6: number;
+    G7: number;
+    G8: number;
+    G9: number;
+    G10: number;
+  };
+  highestStrokeCountKanji?: string;
+  highestGradeLevelKanji?: string;
+  highestJlptLevelKanji?: string;
+  leastFrequentKanji?: string;
+  uniqueKanjiCount: number;
+  contentLength: number;
+}
+
+type KanjiData = Record<
+  string,
+  {
+    strokes: number;
+    grade: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | null;
+    jlpt_new: 1 | 2 | 3 | 4 | 5 | null;
+    freq: number | null;
+  }
+>;
+
 @injectable()
 export default class LogCommand implements ICommand {
   private readonly _autocompleteService: IAutocompletionService;
@@ -50,8 +97,9 @@ export default class LogCommand implements ICommand {
   private readonly _activityService: IActivityService;
   private readonly _userSpeedService: IUserSpeedService;
   private readonly _config: IConfig;
-
   private readonly _subprocessLock: LimitedResourceLock;
+  private readonly _httpClient: HttpClient;
+  private readonly _kanjiData: KanjiData;
 
   private static readonly KNOWN_HOST_TAGS = new Map<string, string>([
     ['youtube.com', 'youtube'],
@@ -61,6 +109,9 @@ export default class LogCommand implements ICommand {
   private static readonly BASE_READING_SPEED = 200; // words per minute
 
   private static readonly BASE_CHARS_PER_PAGE = 120; // characters per page (manga)
+
+  // private static readonly KANJI_DATA =
+  //   require('../../data/kanjidic2-misc.json') as Kanjidic2MiscData;
 
   // Some Discord locale codes are not supported by YouTube
   private static readonly YT_LOCALES = new Map<Locale, string>([
@@ -125,6 +176,10 @@ export default class LogCommand implements ICommand {
     this._subprocessLock = new LimitedResourceLock(
       config.maxYtdlProcesses ?? cpus().length * 10
     );
+
+    this._httpClient = new HttpClient();
+
+    this._kanjiData = require(config.materialsPath + '/dictionary/kanji.json');
   }
 
   public get data() {
@@ -854,6 +909,350 @@ export default class LogCommand implements ICommand {
     });
   }
 
+  private _removeNodesRecursively(
+    node: Node,
+    predicate: (node: Node) => boolean
+  ) {
+    if (predicate(node)) {
+      node.remove();
+    } else {
+      for (const child of node.childNodes) {
+        this._removeNodesRecursively(child, predicate);
+      }
+    }
+  }
+
+  private async _crawlWebsite(url: URL): Promise<WebsiteURLExtractedInfo> {
+    const res = await this._httpClient.get(url);
+    const root = await res.text().then(parseHtml);
+    const tags = new Set<string>();
+    const keywords = root.querySelector('meta[name="keywords"]');
+    if (keywords) {
+      const content = keywords.getAttribute('content');
+      if (content) {
+        for (const tag of content.split(',')) {
+          tags.add(tag.trim());
+        }
+      }
+    }
+
+    const description =
+      root
+        .querySelector('meta[property="og:description"]')
+        ?.getAttribute('content') ||
+      root
+        .querySelector('meta[name="twitter:description"]')
+        ?.getAttribute('content') ||
+      null;
+
+    const title =
+      root.querySelector('title')?.text ??
+      root.querySelector('h1')?.text ??
+      'Untitled';
+
+    const thumbnail =
+      root
+        .querySelector('meta[property="og:image"]')
+        ?.getAttribute('content') ||
+      root
+        .querySelector('meta[name="twitter:image"]')
+        ?.getAttribute('content') ||
+      null;
+
+    let favicon =
+      root.querySelector('link[rel="icon"]')?.getAttribute('href') ||
+      root.querySelector('link[rel="shortcut icon"]')?.getAttribute('href') ||
+      null;
+
+    // check if favicon is a relative url
+    if (favicon && !/^https?:\/\//.test(favicon)) {
+      favicon = new URL(favicon, url).toString();
+    }
+
+    const jlptStats: WebsiteURLExtractedInfo['jlptStats'] = {
+      N1: 0,
+      N2: 0,
+      N3: 0,
+      N4: 0,
+      N5: 0,
+    };
+
+    const gradeStats: WebsiteURLExtractedInfo['gradeStats'] = {
+      G1: 0,
+      G2: 0,
+      G3: 0,
+      G4: 0,
+      G5: 0,
+      G6: 0,
+      G7: 0,
+      G8: 0,
+      G9: 0,
+      G10: 0,
+    };
+
+    let highestStrokeCountKanji;
+    let highestGradeLevelKanji;
+    let highestJlptLevelKanji;
+    let leastFrequentKanji;
+    let highestStrokeCount = 0;
+    let highestGradeLevel = 0;
+    let highestJlptLevel = 6;
+    let leastFrequency = 0;
+    const kanjiCounts: Record<string, number> = {};
+
+    const jlptApproximateFrequencies: Record<keyof typeof jlptStats, number> = {
+      N1: 2000,
+      N2: 1200,
+      N3: 800,
+      N4: 400,
+      N5: 200,
+    };
+
+    const main =
+      root.querySelector('main') || root.querySelector('body') || root;
+
+    // get all text not inside a script, style, ruby > rt, svg, or aria-hidden="true"
+    // or is otherwise not visible
+    this._removeNodesRecursively(main, node => {
+      // Don't remove text nodes
+      if (!(node instanceof HTMLElement)) {
+        return false;
+      }
+
+      // Ignore nodes that are not visible
+      return (
+        node.tagName === 'SCRIPT' ||
+        node.tagName === 'STYLE' ||
+        (node.tagName === 'RT' && node.parentNode?.tagName === 'RUBY') ||
+        node.tagName === 'SVG' ||
+        node.attributes['aria-hidden'] === 'true'
+      );
+    });
+
+    const text = main.structuredText;
+    let contentLength = 0;
+
+    for (const char of text) {
+      const misc = this._kanjiData[char];
+      if (isJapanese(char)) {
+        contentLength++;
+      }
+      if (!misc) {
+        continue;
+      }
+      if (misc.jlpt_new && !kanjiCounts[char]) {
+        jlptStats[`N${misc.jlpt_new}`]++;
+
+        // for JLPT, lower number = higher level
+        if (misc.jlpt_new < highestJlptLevel) {
+          highestJlptLevel = misc.jlpt_new;
+          highestJlptLevelKanji = char;
+        } else if (
+          misc.jlpt_new === highestJlptLevel &&
+          !highestJlptLevelKanji?.includes(char)
+        ) {
+          highestJlptLevelKanji += char;
+        }
+      } else {
+        console.log(`No JLPT level for ${char}`);
+      }
+
+      if (misc.grade && !kanjiCounts[char]) {
+        gradeStats[`G${misc.grade}`]++;
+
+        // for grade, higher number = higher level
+        if (misc.grade > highestGradeLevel) {
+          highestGradeLevel = misc.grade;
+          highestGradeLevelKanji = char;
+        } else if (
+          misc.grade === highestGradeLevel &&
+          !highestGradeLevelKanji?.includes(char)
+        ) {
+          highestGradeLevelKanji += char;
+        }
+      }
+
+      if (misc.strokes > highestStrokeCount) {
+        highestStrokeCount = misc.strokes;
+        highestStrokeCountKanji = char;
+      }
+
+      if (misc.freq && misc.freq > leastFrequency) {
+        leastFrequency = misc.freq;
+        leastFrequentKanji = char;
+
+        console.log(misc.freq, misc.jlpt_new);
+
+        if (!misc.jlpt_new) {
+          let diff = Infinity;
+          let approximateJlptLevel: keyof typeof jlptStats | undefined;
+
+          for (const [level, frequency] of Object.entries(
+            jlptApproximateFrequencies
+          )) {
+            if (Math.abs(frequency - misc.freq) < diff) {
+              diff = Math.abs(frequency - misc.freq);
+              approximateJlptLevel = level as keyof typeof jlptStats;
+            }
+          }
+
+          if (approximateJlptLevel) {
+            const level = approximateJlptLevel;
+            jlptStats[level]++;
+            console.log(`Approximated ${char} as ${level} based on frequency`);
+          }
+        }
+      }
+
+      kanjiCounts[char] = (kanjiCounts[char] ?? 0) + 1;
+    }
+
+    const tagsArray = Array.from(tags);
+    const uniqueKanjiCount = Object.keys(kanjiCounts).length;
+
+    // find JLPT level that contains 80% of kanji with JLPT level
+    let jlptLevel;
+    let sum = 0;
+
+    for (const level of [5, 4, 3, 2, 1] as (1 | 2 | 3 | 4 | 5)[]) {
+      sum += jlptStats[`N${level}`];
+      if (sum / uniqueKanjiCount >= 0.85) {
+        jlptLevel = level;
+        break;
+      }
+    }
+
+    return {
+      title,
+      description,
+      tags: tagsArray,
+      jlptStats,
+      gradeStats,
+      highestGradeLevelKanji,
+      highestJlptLevelKanji,
+      highestStrokeCountKanji,
+      img: thumbnail,
+      uniqueKanjiCount,
+      jlptLevel,
+      leastFrequentKanji,
+      favicon,
+      contentLength,
+    };
+  }
+
+  private async _executeWebsite(interaction: ChatInputCommandInteraction) {
+    const i18n = this._localizationService.useScope(
+      interaction.locale,
+      'log.website.messages'
+    );
+
+    await interaction.deferReply();
+
+    const url = interaction.options.getString('url', true);
+    const duration = interaction.options.getNumber('duration', true);
+    const enteredDate = interaction.options.getString('date', false);
+
+    const date = enteredDate
+      ? await parseTimeWithUserTimezone(
+          this._userConfigService,
+          this._guildConfigService,
+          enteredDate,
+          interaction.user.id,
+          interaction.guildId
+        )
+      : new Date();
+
+    if (!date) {
+      await interaction.editReply({
+        content: i18n.mustLocalize('invalid-date', 'Invalid date'),
+      });
+      return;
+    }
+
+    const urlComponents = new URL(url);
+    const info = await this._crawlWebsite(urlComponents);
+
+    console.log(info);
+
+    const activity = await this._activityService.createActivity({
+      name: info.title,
+      duration,
+      tags: info.tags,
+      userId: interaction.user.id,
+      date,
+      type: ActivityType.Reading,
+    });
+
+    const fields = [
+      {
+        name: i18n.mustLocalize('website', 'Website'),
+        value: info.title,
+      },
+      {
+        name: i18n.mustLocalize('duration', 'Duration'),
+        value: localizeDuration(
+          duration,
+          interaction.locale,
+          this._localizationService
+        ),
+      },
+      {
+        name: i18n.mustLocalize('kanji-level', 'Kanji Level'),
+        value: info.jlptLevel
+          ? `N${info.jlptLevel}`
+          : i18n.mustLocalize('jlpt-level-unknown', 'Unknown'),
+        inline: true,
+      },
+      {
+        name: i18n.mustLocalize('unique-kanji', 'Unique Kanji'),
+        value: info.uniqueKanjiCount.toString(),
+        inline: true,
+      },
+      {
+        name: i18n.mustLocalize('total-characters', 'Total Characters'),
+        value: info.contentLength.toString(),
+        inline: true,
+      },
+    ];
+
+    if (info.description) {
+      // put description after website
+      fields.splice(1, 0, {
+        name: i18n.mustLocalize('description', 'Description'),
+        value: info.description,
+      });
+    }
+
+    if (info.tags.length > 0) {
+      fields.push({
+        name: i18n.mustLocalize('tags', 'Tags'),
+        value: info.tags.join(', '),
+      });
+    }
+
+    // show some stats about the website and link to the website
+    const embed = new EmbedBuilder()
+      .setTitle(i18n.mustLocalize('activity-logged', 'Activity Logged!'))
+      .setFields(fields)
+      .setFooter({text: `ID: ${activity.id}`})
+      .setTimestamp(activity.date)
+      .setColor(this._config.colors.success)
+      .setImage(info.img)
+      .setThumbnail(info.favicon);
+
+    const linkButton = new ButtonBuilder()
+      .setStyle(ButtonStyle.Link)
+      .setLabel(i18n.mustLocalize('link', 'Link'))
+      .setURL(url);
+
+    const row = new ActionRowBuilder<ButtonBuilder>().addComponents(linkButton);
+
+    await interaction.editReply({
+      embeds: [embed],
+      components: [row],
+    });
+  }
+
   public async execute(interaction: ChatInputCommandInteraction) {
     if (interaction.options.getSubcommand() === 'video') {
       return this._executeVideo(interaction);
@@ -863,6 +1262,8 @@ export default class LogCommand implements ICommand {
       return this._executeVN(interaction);
     } else if (interaction.options.getSubcommand() === 'manga') {
       return this._executeManga(interaction);
+    } else if (interaction.options.getSubcommand() === 'website') {
+      return this._executeWebsite(interaction);
     }
 
     if (interaction.options.getSubcommand() !== 'manual') {
