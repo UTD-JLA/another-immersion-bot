@@ -923,8 +923,11 @@ export default class LogCommand implements ICommand {
   }
 
   private async _crawlWebsite(url: URL): Promise<WebsiteURLExtractedInfo> {
-    const res = await this._httpClient.get(url);
-    const root = await res.text().then(parseHtml);
+    const res = await this._httpClient.get(url, {
+      // max 8kb for headers
+      maxHeaderSize: 8 * 1024,
+    });
+    const root = await res.text({maxBytes: 1024 * 500}).then(parseHtml);
     const tags = new Set<string>();
     const keywords = root.querySelector('meta[name="keywords"]');
     if (keywords) {

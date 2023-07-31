@@ -16,6 +16,12 @@ export type RequestOptionsAndBody = RequestOptions & {
   body?: string | Buffer | Stream;
 };
 
+export type BodyReadOptions = {
+  maxBytes?: number;
+  ignoreContentType?: boolean;
+  contentType?: string | RegExp;
+};
+
 // Wrapper around http(s) response for convenience
 export class HttpResponse {
   private _response: IncomingMessage;
@@ -40,33 +46,70 @@ export class HttpResponse {
     return this._response;
   }
 
-  text(): Promise<string> {
+  text(options?: BodyReadOptions): Promise<string> {
+    if (options?.maxBytes && !this._isContentLengthLessThan(options.maxBytes)) {
+      return Promise.reject(new Error('Response body too large'));
+    }
+
+    // if ignoreContentType is not set or is false, check content type
+    if (!options?.ignoreContentType) {
+      const contentType = this.headers['content-type'];
+      const expectedContentType = options?.contentType || /^text/;
+
+      if (
+        !contentType ||
+        (expectedContentType instanceof RegExp &&
+          !expectedContentType.test(contentType)) ||
+        (typeof expectedContentType === 'string' &&
+          contentType !== expectedContentType)
+      ) {
+        return Promise.reject(
+          new Error(
+            `Response content type is not text, got ${contentType ?? 'none'}`
+          )
+        );
+      }
+    }
+
     return new Promise((resolve, reject) => {
       let data = '';
-      this._response.on('data', chunk => (data += chunk));
+      this._response.on('data', chunk => {
+        if (
+          options?.maxBytes &&
+          data.length + chunk.length > options.maxBytes
+        ) {
+          reject(new Error('Response body too large'));
+          this._response.destroy();
+        } else {
+          data += chunk;
+        }
+      });
       this._response.on('end', () => resolve(data));
       this._response.on('error', reject);
     });
   }
 
-  json(): Promise<unknown> {
-    return new Promise((resolve, reject) => {
-      let data = '';
-      this._response.on('data', chunk => (data += chunk));
-      this._response.on('end', () => {
-        try {
-          resolve(JSON.parse(data));
-        } catch (error) {
-          reject(error);
-        }
-      });
-      this._response.on('error', reject);
-    });
+  async json(options?: BodyReadOptions): Promise<unknown> {
+    if (!options?.contentType) {
+      options = {...options, contentType: 'application/json'};
+    }
+
+    const data = await this.text(options);
+    return JSON.parse(data);
   }
 
-  async jsonAs<T>(schema: z.ZodType<T>): Promise<T> {
-    const data = await this.json();
+  async jsonAs<T>(schema: z.ZodType<T>, options?: BodyReadOptions): Promise<T> {
+    const data = await this.json(options);
     return schema.parse(data);
+  }
+
+  private _isContentLengthLessThan(maxBytes: number): boolean {
+    if (!this.headers['content-length']) {
+      return true;
+    }
+
+    const contentLength = parseInt(this.headers['content-length'] as string);
+    return contentLength <= maxBytes;
   }
 }
 
