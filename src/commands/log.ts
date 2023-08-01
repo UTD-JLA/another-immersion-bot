@@ -1003,14 +1003,6 @@ export default class LogCommand implements ICommand {
     let leastFrequency = 0;
     const kanjiCounts: Record<string, number> = {};
 
-    const jlptApproximateFrequencies: Record<keyof typeof jlptStats, number> = {
-      N1: 2000,
-      N2: 1200,
-      N3: 800,
-      N4: 400,
-      N5: 200,
-    };
-
     const main =
       root.querySelector('main') || root.querySelector('body') || root;
 
@@ -1056,8 +1048,6 @@ export default class LogCommand implements ICommand {
         ) {
           highestJlptLevelKanji += char;
         }
-      } else {
-        console.log(`No JLPT level for ${char}`);
       }
 
       if (misc.grade && !kanjiCounts[char]) {
@@ -1083,28 +1073,6 @@ export default class LogCommand implements ICommand {
       if (misc.freq && misc.freq > leastFrequency) {
         leastFrequency = misc.freq;
         leastFrequentKanji = char;
-
-        console.log(misc.freq, misc.jlpt_new);
-
-        if (!misc.jlpt_new) {
-          let diff = Infinity;
-          let approximateJlptLevel: keyof typeof jlptStats | undefined;
-
-          for (const [level, frequency] of Object.entries(
-            jlptApproximateFrequencies
-          )) {
-            if (Math.abs(frequency - misc.freq) < diff) {
-              diff = Math.abs(frequency - misc.freq);
-              approximateJlptLevel = level as keyof typeof jlptStats;
-            }
-          }
-
-          if (approximateJlptLevel) {
-            const level = approximateJlptLevel;
-            jlptStats[level]++;
-            console.log(`Approximated ${char} as ${level} based on frequency`);
-          }
-        }
       }
 
       kanjiCounts[char] = (kanjiCounts[char] ?? 0) + 1;
@@ -1174,8 +1142,6 @@ export default class LogCommand implements ICommand {
 
     const urlComponents = new URL(url);
     const info = await this._crawlWebsite(urlComponents);
-
-    console.log(info);
 
     const activity = await this._activityService.createActivity({
       name: info.title,
