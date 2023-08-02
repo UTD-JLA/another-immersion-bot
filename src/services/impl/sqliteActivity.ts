@@ -377,12 +377,11 @@ export default class SqliteActivityService implements IActivityService {
   ): Promise<Array<[`${number}-${number}-${number}`, number]>> {
     const offsetMinutes = timezone ? getUTCOffset(timezone) : 0;
     const offsetMilliseconds = offsetMinutes * 60 * 1000;
-    const groupBySql = sql`strftime('%Y-%m-%d', (${activities.date} + ${offsetMilliseconds}) / 1000, 'unixepoch')`;
 
     const rows = getDb()
       .select({
-        date: activities.date,
         duration: sql<number>`SUM(${activities.duration})`,
+        dateString: sql<`${number}-${number}-${number}`>`strftime('%Y-%m-%d', (${activities.date} + ${offsetMilliseconds}) / 1000, 'unixepoch')`,
       })
       .from(activities)
       .where(
@@ -394,16 +393,10 @@ export default class SqliteActivityService implements IActivityService {
           )
         )
       )
-      .groupBy(groupBySql)
+      .groupBy(({dateString}) => dateString)
       .orderBy(activities.date)
       .all();
 
-    return rows.map(
-      row =>
-        [new Date(row.date).toISOString().slice(0, 10), row.duration] as [
-          `${number}-${number}-${number}`,
-          number
-        ]
-    );
+    return rows.map(row => [row.dateString, row.duration]);
   }
 }
