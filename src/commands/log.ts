@@ -385,7 +385,9 @@ export default class LogCommand implements ICommand {
       .setStyle(ButtonStyle.Link)
       .setURL(activity.url!);
 
-    const row = new ActionRowBuilder<ButtonBuilder>().addComponents(linkButton);
+    const linkRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+      linkButton
+    );
 
     // allow user to redo time with video duration if they used the time param
     // but didn't mean for that to be the duration
@@ -393,7 +395,11 @@ export default class LogCommand implements ICommand {
       const dontUseTimeParamButton = new ButtonBuilder()
         .setCustomId('dont-use-time-param')
         .setLabel(
-          i18n.mustLocalize('dont-use-time-param', 'Don\'t use "t" param')
+          i18n.mustLocalize(
+            'dont-use-time-param',
+            `Use full duration (${Math.round(vidInfo.duration / 60)} minutes)`,
+            Math.round(vidInfo.duration / 60)
+          )
         )
         .setStyle(ButtonStyle.Primary);
 
@@ -402,19 +408,22 @@ export default class LogCommand implements ICommand {
         .setLabel(
           i18n.mustLocalize(
             'use-time-param-as-starting-time',
-            'Use "t" param as starting time'
+            `Use remaining duration (${Math.round(
+              (vidInfo.duration - vidInfo.seekTime) / 60
+            )} minutes)`,
+            Math.round((vidInfo.duration - vidInfo.seekTime) / 60)
           )
         )
         .setStyle(ButtonStyle.Primary);
 
-      row.addComponents(
+      const actionRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
         dontUseTimeParamButton,
         useTimeParamAsStartingTimeButton
       );
 
       const response = await interaction.editReply({
         embeds: [embed],
-        components: [row],
+        components: [actionRow, linkRow],
       });
 
       let buttonInteraction: ButtonInteraction;
@@ -429,11 +438,9 @@ export default class LogCommand implements ICommand {
           componentType: ComponentType.Button,
         });
       } catch {
-        row.setComponents(linkButton);
-
         await interaction.editReply({
           embeds: [embed],
-          components: [row],
+          components: [linkRow],
         });
         return;
       }
@@ -465,16 +472,14 @@ export default class LogCommand implements ICommand {
       embed.setFooter({text: `ID: ${newId}`});
       embed.setFields(fields);
 
-      row.setComponents(linkButton);
-
       await interaction.editReply({
         embeds: [embed],
-        components: [row],
+        components: [linkRow],
       });
     } else {
       await interaction.editReply({
         embeds: [embed],
-        components: [row],
+        components: [linkRow],
       });
     }
   }

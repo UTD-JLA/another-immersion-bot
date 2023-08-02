@@ -29,8 +29,8 @@
         "duration": "視聴時間",
         "auto-tagged": "自動付きタグ",
         "invalid-date": "入力された日付はただしくありません。",
-        "dont-use-time-param": "時間パラメータ「t」は使わないで",
-        "use-time-param-as-starting-time": "時間パラメータ「t」を開始時間として使う",
+        "dont-use-time-param": "{0}分に変更（開始位置を使用しない）",
+        "use-time-param-as-starting-time": "{0}分に変更（開始位置から最後までの長さを使用）",
         "video-link": "動画リンク"
       }
     },
