@@ -188,6 +188,7 @@ export default class LogCommand implements ICommand {
         [
           '--no-call-home',
           '--skip-download',
+          '--no-playlist',
           ...extractorArgs,
           '--print',
           `
