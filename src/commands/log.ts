@@ -896,9 +896,7 @@ export default class LogCommand implements ICommand {
     const tagString = interaction.options.getString('tags', false);
     const tags = tagString ? tagString.split(',') : [];
 
-    await interaction.deferReply({
-      ephemeral: true,
-    });
+    await interaction.deferReply();
 
     if (urlComponents) {
       tags.push(...(await this._getDomainTags(urlComponents)));
@@ -953,6 +951,7 @@ export default class LogCommand implements ICommand {
 
     const embed = new EmbedBuilder()
       .setTitle(i18n.mustLocalize('activity-logged', 'Activity Logged!'))
+      .setDescription(activity.name)
       .setFooter({text: `ID: ${activity.id}`})
       .setTimestamp(activity.date)
       .setColor(this._config.colors.success);
