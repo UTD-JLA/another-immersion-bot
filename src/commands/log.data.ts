@@ -281,6 +281,76 @@ export const getCommandBuilder = (localizationService: ILocalizationService) =>
     )
     .addSubcommand(subcommand =>
       subcommand
+        .setName('book')
+        .setNameLocalizations(
+          localizationService.getAllLocalizations('log.book.name')
+        )
+        .setDescription('Log a book pages')
+        .setDescriptionLocalizations(
+          localizationService.getAllLocalizations('log.book.description')
+        )
+        .addStringOption(option =>
+          option
+            .setName('name')
+            .setNameLocalizations(
+              localizationService.getAllLocalizations('log.book.name.name')
+            )
+            .setDescription('Name of the book')
+            .setDescriptionLocalizations(
+              localizationService.getAllLocalizations(
+                'log.book.name.description'
+              )
+            )
+            .setRequired(true)
+            .setAutocomplete(true)
+        )
+        .addNumberOption(option =>
+          option
+            .setName('pages')
+            .setNameLocalizations(
+              localizationService.getAllLocalizations('log.book.pages.name')
+            )
+            .setDescription('How many pages')
+            .setDescriptionLocalizations(
+              localizationService.getAllLocalizations(
+                'log.book.pages.description'
+              )
+            )
+            .setMinValue(0)
+            .setRequired(true)
+        )
+        .addNumberOption(option =>
+          option
+            .setName('duration')
+            .setNameLocalizations(
+              localizationService.getAllLocalizations('log.book.duration.name')
+            )
+            .setDescription('How long it took to read in minutes')
+            .setDescriptionLocalizations(
+              localizationService.getAllLocalizations(
+                'log.book.duration.description'
+              )
+            )
+            .setMinValue(0)
+            .setRequired(false)
+        )
+        .addStringOption(option =>
+          option
+            .setName('date')
+            .setNameLocalizations(
+              localizationService.getAllLocalizations('log.book.date.name')
+            )
+            .setDescription('Date/time of the activity')
+            .setDescriptionLocalizations(
+              localizationService.getAllLocalizations(
+                'log.book.date.description'
+              )
+            )
+            .setRequired(false)
+        )
+    )
+    .addSubcommand(subcommand =>
+      subcommand
         .setName('manual')
         .setNameLocalizations(
           localizationService.getAllLocalizations('log.manual.name')

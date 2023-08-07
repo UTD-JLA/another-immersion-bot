@@ -4,5 +4,6 @@ export interface IUserConfig {
   timezone?: string;
   readingSpeed?: number;
   readingSpeedPages?: number;
+  readingSpeedBookPages?: number;
   dailyGoal?: number;
 }

@@ -1,0 +1,1 @@
+ALTER TABLE user_configs ADD `reading_speed_book_pages` integer;

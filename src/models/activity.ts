@@ -7,6 +7,7 @@ export enum ActivityUnit {
   Page = 'page',
   Character = 'character',
   Episode = 'episode',
+  BookPage = 'bookPage',
 }
 
 export interface IActivity {

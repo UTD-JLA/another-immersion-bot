@@ -5,5 +5,6 @@ export const userConfigs = sqliteTable('user_configs', {
   timeZone: text('time_zone'),
   readingSpeed: integer('reading_speed'),
   readingSpeedPages: integer('reading_speed_pages'),
+  readingSpeedBookPages: integer('reading_speed_book_pages'),
   dailyGoal: integer('daily_goal'),
 });

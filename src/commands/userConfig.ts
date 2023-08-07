@@ -152,6 +152,25 @@ export default class UserConfigCommand implements ICommand {
                   .setMaxValue(20)
                   .setAutocomplete(true)
               )
+              .addNumberOption(option =>
+                option
+                  .setName('book-page-speed')
+                  .setNameLocalizations(
+                    this._localizationService.getAllLocalizations(
+                      'user-config.set.reading-speed.book-page-speed.name'
+                    )
+                  )
+                  .setDescription('Your book page speed')
+                  .setDescriptionLocalizations(
+                    this._localizationService.getAllLocalizations(
+                      'user-config.set.reading-speed.book-page-speed.description'
+                    )
+                  )
+                  .setRequired(false)
+                  .setMinValue(0)
+                  .setMaxValue(10)
+                  .setAutocomplete(true)
+              )
           )
           .addSubcommand(subcommand =>
             subcommand
@@ -242,9 +261,15 @@ export default class UserConfigCommand implements ICommand {
             i18n.mustLocalize('not-set', 'Not set'),
         },
         {
-          name: i18n.mustLocalize('reading-speed-pages', 'Reading Speed Pages'),
+          name: i18n.mustLocalize('reading-speed-pages', 'Reading Speed Manga'),
           value:
             config.readingSpeedPages?.toPrecision(3) ??
+            i18n.mustLocalize('not-set', 'Not set'),
+        },
+        {
+          name: i18n.mustLocalize('reading-speed-books', 'Reading Speed Books'),
+          value:
+            config.readingSpeedBookPages?.toPrecision(3) ??
             i18n.mustLocalize('not-set', 'Not set'),
         },
       ]);
@@ -292,6 +317,8 @@ export default class UserConfigCommand implements ICommand {
         false
       );
 
+      const bookSpeed = interaction.options.getNumber('book-page-speed', false);
+
       if (readingSpeed)
         await this._userConfigService.setReadingSpeed(
           interaction.user.id,
@@ -302,6 +329,12 @@ export default class UserConfigCommand implements ICommand {
         await this._userConfigService.setPageReadingSpeed(
           interaction.user.id,
           mangaSpeed
+        );
+
+      if (bookSpeed)
+        await this._userConfigService.setBookPageReadingSpeed(
+          interaction.user.id,
+          bookSpeed
         );
 
       const fields = [];
@@ -316,6 +349,12 @@ export default class UserConfigCommand implements ICommand {
         fields.push({
           name: i18n.mustLocalize('new-pages-speed', 'New Pages Speed'),
           value: mangaSpeed.toString(),
+        });
+
+      if (bookSpeed)
+        fields.push({
+          name: i18n.mustLocalize('new-book-speed', 'New Book Speed'),
+          value: bookSpeed.toString(),
         });
 
       if (fields.length === 0) {
@@ -376,7 +415,9 @@ export default class UserConfigCommand implements ICommand {
       const unit =
         focused.name === 'reading-speed'
           ? ActivityUnit.Character
-          : ActivityUnit.Page;
+          : focused.name === 'manga-page-speed'
+          ? ActivityUnit.Page
+          : ActivityUnit.BookPage;
       const unitChar = unit === ActivityUnit.Character ? 'c' : 'p';
 
       const predictedSpeed = await this._userSpeedService.predictSpeed(

@@ -117,7 +117,32 @@
       "messages": {
         "activity-logged": "アクティビティを記録しました！",
         "invalid-date": "入力された日付はただしくありません。",
-        "manga-title": "漫画のタイトル",
+        "title": "漫画のタイトル",
+        "pages": "ページ数",
+        "total-read-time": "読書時間",
+        "pages-per-minute": "一分間のページ数",
+        "inferred-pages-per-minute": "一分間のページ数（推定）",
+        "estimated-characters": "推定文字数",
+        "duration-source-default": "読書時間は一定の読書速度から計算されました。間違いがある場合は、`読書時間`という引数を使ってください。",
+        "duration-source-reading-speed-config": "読書時間は設定した読書速度（字/分）から計算されました。間違いがある場合は、`読書時間`という引数を使ってください。",
+        "duration-source-page-speed-config": "読書時間は設定したページ速度（ページ/分）から計算されました。間違いがある場合は、`読書時間`という引数を使ってください。"
+      }
+    },
+    "book": {
+      "name": "本",
+      "description": "本の読書時間をもっと簡単に記録",
+      "name.name": "タイトル",
+      "name.description": "本のタイトルを入力してください",
+      "pages.name": "ページ数",
+      "pages.description": "読書したページ数を入力してください",
+      "duration.name": "読書時間",
+      "duration.description": "読書時間(分)を入力してください",
+      "date.name": "日付",
+      "date.description": "本を読書した日付を入力してください",
+      "messages": {
+        "activity-logged": "アクティビティを記録しました！",
+        "invalid-date": "入力された日付はただしくありません。",
+        "title": "本のタイトル",
         "pages": "ページ数",
         "total-read-time": "読書時間",
         "pages-per-minute": "一分間のページ数",
@@ -223,7 +248,8 @@
         "timezone": "タイムゾーン",
         "daily-goal": "日ごとの目標",
         "reading-speed": "読書速度",
-        "reading-speed-pages": "読書速度(ページ/分)",
+        "reading-speed-pages": "マンガの読書速度(ページ/分)",
+        "reading-speed-books": "本の読書速度(ページ/分)",
         "not-set": "未設定"
       }
     },
@@ -247,11 +273,11 @@
         },
         "manga-page-speed": {
           "name": "マンガページ速度",
-          "description": "ユーザーのマンガページ速度を変更",
-          "manga-page-speed": {
-            "name": "マンガページ速度",
-            "description": "マンガページ速度(ページ/分)を入力してください"
-          }
+          "description": "ユーザーのマンガページ速度を変更"
+        },
+        "book-page-speed": {
+          "name": "本ページ速度",
+          "description": "ユーザーの本ページ速度を変更"
         }
       },
       "daily-goal": {
@@ -267,6 +293,7 @@
         "timezone-set": "タイムゾーンを{0}に変更しました。",
         "new-reading-speed": "新しい読書速度",
         "new-pages-speed": "新しいマンガページ速度",
+        "new-book-speed": "新しい本ページ速度",
         "no-arguments": "ユーザーの設定を変更するには、少なくとも1つの引数が必要です。",
         "reading-speed-set": "読書速度を変更しました",
         "daily-goal-set": "日ごとの目標を変更しました"

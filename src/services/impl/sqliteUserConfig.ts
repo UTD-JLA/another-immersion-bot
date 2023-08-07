@@ -177,4 +177,39 @@ export default class SqliteUserConfig implements IUserConfigService {
 
     return Promise.resolve();
   }
+
+  public async getBookPageReadingSpeed(
+    userId: string
+  ): Promise<number | undefined> {
+    const userConfig = getDb()
+      .select({
+        readingSpeedBookPages: userConfigs.readingSpeedBookPages,
+      })
+      .from(userConfigs)
+      .where(eq(userConfigs.userId, userId))
+      .get();
+
+    return userConfig?.readingSpeedBookPages ?? undefined;
+  }
+
+  public async setBookPageReadingSpeed(
+    userId: string,
+    readingSpeedBookPages: number
+  ): Promise<void> {
+    getDb()
+      .insert(userConfigs)
+      .values({
+        userId,
+        readingSpeedBookPages,
+      })
+      .onConflictDoUpdate({
+        target: userConfigs.userId,
+        set: {
+          readingSpeedBookPages,
+        },
+      })
+      .run();
+
+    return Promise.resolve();
+  }
 }

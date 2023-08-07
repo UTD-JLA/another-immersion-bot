@@ -83,6 +83,8 @@ export interface IUserConfigService {
   setReadingSpeed(userId: string, readingSpeed: number): Promise<void>;
   getPageReadingSpeed(userId: string): Promise<number | undefined>;
   setPageReadingSpeed(userId: string, readingSpeed: number): Promise<void>;
+  getBookPageReadingSpeed(userId: string): Promise<number | undefined>;
+  setBookPageReadingSpeed(userId: string, readingSpeed: number): Promise<void>;
   getDailyGoal(userId: string): Promise<number | undefined>;
   setDailyGoal(userId: string, dailyGoal: number): Promise<void>;
 }

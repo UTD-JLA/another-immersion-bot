@@ -21,6 +21,10 @@ const schema = new Schema<IUserConfig>({
     min: 0,
     max: 20,
   },
+  readingSpeedBookPages: {
+    type: Number,
+    min: 0,
+  },
   dailyGoal: {
     type: Number,
     min: 0,

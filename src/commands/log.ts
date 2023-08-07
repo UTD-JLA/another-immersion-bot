@@ -23,7 +23,7 @@ import {spawn} from 'child_process';
 import {LimitedResourceLock, ReleaseFn} from '../util/limitedResource';
 import {cpus} from 'os';
 import {IConfig} from '../config';
-import {getUserTimezone, parseTimeWithUserTimezone} from '../util/time';
+import {parseTimeWithUserTimezone} from '../util/time';
 import {getCommandBuilder} from './log.data';
 import {IActivityService, IUserSpeedService} from '../services/interfaces';
 import {localizeDuration} from '../util/generalLocalization';
@@ -61,6 +61,8 @@ export default class LogCommand implements ICommand {
   private static readonly BASE_READING_SPEED = 200; // words per minute
 
   private static readonly BASE_CHARS_PER_PAGE = 120; // characters per page (manga)
+
+  private static readonly BASE_CHARS_PER_BOOK_PAGE = 250; // characters per page (book)
 
   // Some Discord locale codes are not supported by YouTube
   private static readonly YT_LOCALES = new Map<Locale, string>([
@@ -671,19 +673,30 @@ export default class LogCommand implements ICommand {
     });
   }
 
-  private async _executeManga(interaction: ChatInputCommandInteraction) {
+  private async _executeGenericPaged(
+    interaction: ChatInputCommandInteraction,
+    options: {
+      nameOption: string;
+      conversionFactor: number;
+      unit: ActivityUnit.BookPage | ActivityUnit.Page;
+      primaryTag: string;
+    }
+  ): Promise<void> {
     const i18n = this._localizationService.useScope(
       interaction.locale,
-      'log.manga.messages'
+      `log.${options.primaryTag}.messages`
     );
 
     await interaction.deferReply();
     // Note: should not have X-name format because there is no manga data
     // using non-scoped data is fine for now
-    const nameOrSuggestion = interaction.options.getString('name', true);
-    const namePromise =
-      this._autocompleteService.resolveSuggestion(nameOrSuggestion);
-
+    const nameOrSuggestion = interaction.options.getString(
+      options.nameOption,
+      true
+    );
+    const name = await this._autocompleteService.resolveSuggestion(
+      nameOrSuggestion
+    );
     const pages = interaction.options.getNumber('pages', true);
     const duration = interaction.options.getNumber('duration', false);
     const enteredDate = interaction.options.getString('date', false);
@@ -707,7 +720,13 @@ export default class LogCommand implements ICommand {
       finalDuration = duration;
     } else {
       const pageReadingSpeed =
-        await this._userConfigService.getPageReadingSpeed(interaction.user.id);
+        options.unit === ActivityUnit.Page
+          ? await this._userConfigService.getPageReadingSpeed(
+              interaction.user.id
+            )
+          : await this._userConfigService.getBookPageReadingSpeed(
+              interaction.user.id
+            );
 
       if (pageReadingSpeed) {
         pagesPerMinute = pageReadingSpeed;
@@ -716,7 +735,7 @@ export default class LogCommand implements ICommand {
 
         const estimatedChars = await this._userSpeedService.convertUnit(
           interaction.user.id,
-          ActivityUnit.Page,
+          options.unit,
           ActivityUnit.Character,
           pages
         );
@@ -739,14 +758,12 @@ export default class LogCommand implements ICommand {
 
         pagesPerMinute =
           (charsPerMinute ?? LogCommand.BASE_READING_SPEED) /
-          LogCommand.BASE_CHARS_PER_PAGE;
+          options.conversionFactor;
 
         finalDuration = pages / pagesPerMinute;
         durationSource = charsPerMinute ? 'reading-speed-config' : 'default';
       }
     }
-
-    const name = await namePromise;
 
     const date = enteredDate
       ? await parseTimeWithUserTimezone(
@@ -765,7 +782,7 @@ export default class LogCommand implements ICommand {
       return;
     }
 
-    const tags = ['manga'];
+    const tags = [options.primaryTag];
 
     const newActivity: Omit<IActivity, 'id'> = {
       name,
@@ -775,7 +792,7 @@ export default class LogCommand implements ICommand {
       date,
       type: ActivityType.Reading,
       rawDuration: pages,
-      rawDurationUnit: ActivityUnit.Page,
+      rawDurationUnit: options.unit,
     };
 
     if (duration) {
@@ -798,7 +815,7 @@ export default class LogCommand implements ICommand {
       .setTitle(i18n.mustLocalize('activity-logged', 'Activity Logged!'))
       .setFields(
         {
-          name: i18n.mustLocalize('manga-title', 'Manga'),
+          name: i18n.mustLocalize('title', 'Title'),
           value: name,
         },
         {
@@ -860,6 +877,24 @@ export default class LogCommand implements ICommand {
     });
   }
 
+  private async _executeManga(interaction: ChatInputCommandInteraction) {
+    return this._executeGenericPaged(interaction, {
+      unit: ActivityUnit.Page,
+      conversionFactor: LogCommand.BASE_CHARS_PER_PAGE,
+      primaryTag: 'manga',
+      nameOption: 'name',
+    });
+  }
+
+  private async _executeBook(interaction: ChatInputCommandInteraction) {
+    return this._executeGenericPaged(interaction, {
+      unit: ActivityUnit.BookPage,
+      conversionFactor: LogCommand.BASE_CHARS_PER_BOOK_PAGE,
+      primaryTag: 'book',
+      nameOption: 'name',
+    });
+  }
+
   public async execute(interaction: ChatInputCommandInteraction) {
     if (interaction.options.getSubcommand() === 'video') {
       return this._executeVideo(interaction);
@@ -869,9 +904,9 @@ export default class LogCommand implements ICommand {
       return this._executeVN(interaction);
     } else if (interaction.options.getSubcommand() === 'manga') {
       return this._executeManga(interaction);
-    }
-
-    if (interaction.options.getSubcommand() !== 'manual') {
+    } else if (interaction.options.getSubcommand() === 'book') {
+      return this._executeBook(interaction);
+    } else if (interaction.options.getSubcommand() !== 'manual') {
       throw new Error('Subcommand not implemented');
     }
 
@@ -919,15 +954,6 @@ export default class LogCommand implements ICommand {
       return;
     }
 
-    const timezone = dateString
-      ? await getUserTimezone(
-          this._userConfigService,
-          this._guildConfigService,
-          interaction.user.id,
-          interaction.guildId ?? undefined
-        )
-      : null;
-
     // Convert durartions to minutes as needed
     let convertedDuration = duration;
 
@@ -955,24 +981,6 @@ export default class LogCommand implements ICommand {
       .setFooter({text: `ID: ${activity.id}`})
       .setTimestamp(activity.date)
       .setColor(this._config.colors.success);
-
-    if (timezone) {
-      const warningMessage = i18n.localize(
-        'timezone-warning',
-        timezone,
-        date.toISOString()
-      );
-
-      embed.setDescription(
-        warningMessage ??
-          `Note: date was parsed as __${date.toISOString()}__\n` +
-            ' **You should see the correct localized time at the bottom of this message.**\n' +
-            ` The timezone used was **${timezone}**. Check your user configuration to change this.\n` +
-            ' Use /undo to remove this activity if it is incorrect and try again.\n' +
-            ' For example: use "yesterday 8pm jst" instead of "yesterday 8pm".' +
-            ' Also consider setting your timezone or changing the guild timezone if you are an admin.'
-      );
-    }
 
     await interaction.editReply({
       embeds: [embed],

@@ -87,4 +87,16 @@ export default class UserConfigService implements IUserConfigService {
   async setDailyGoal(userId: string, dailyGoal: number): Promise<void> {
     await this._updateUserConfig(userId, {dailyGoal});
   }
+
+  async getBookPageReadingSpeed(userId: string): Promise<number | undefined> {
+    const config = await this._getUserConfig(userId);
+    return config.readingSpeedBookPages;
+  }
+
+  async setBookPageReadingSpeed(
+    userId: string,
+    readingSpeedBookPages: number
+  ): Promise<void> {
+    await this._updateUserConfig(userId, {readingSpeedBookPages});
+  }
 }
