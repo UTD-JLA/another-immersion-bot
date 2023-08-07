@@ -3,9 +3,9 @@ import {
   IAutocompletionService,
   ILoggerService,
   IMaterialSourceService,
-  ISuggestion,
-  MaterialResult,
 } from '../interfaces';
+import {MaterialResult} from '../interfaces/materialSourceService';
+import {ISuggestion} from '../interfaces/autocompletionService';
 import {ExpiringCache} from '../../util/cache';
 
 @injectable()

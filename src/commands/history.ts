@@ -13,11 +13,8 @@ import {
 import {inject, injectable} from 'inversify';
 import {IGuildConfigService, IUserConfigService} from '../services';
 import {getUserTimezone} from '../util/time';
-import {
-  IActivityService,
-  ILocalizationService,
-  LocalizationScope,
-} from '../services/interfaces';
+import {IActivityService, ILocalizationService} from '../services';
+import {LocalizationScope} from '../services/interfaces/localizationService';
 
 @injectable()
 export default class HistoryCommand implements ICommand {

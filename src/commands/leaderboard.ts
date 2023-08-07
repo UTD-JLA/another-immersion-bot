@@ -6,11 +6,8 @@ import {
 } from 'discord.js';
 import {inject, injectable} from 'inversify';
 import {IConfig} from '../config';
-import {
-  IActivityService,
-  ILocalizationService,
-  LocalizationScope,
-} from '../services/interfaces';
+import {IActivityService, ILocalizationService} from '../services';
+import {LocalizationScope} from '../services/interfaces/localizationService';
 import {ActivityType} from '../models/activity';
 
 @injectable()

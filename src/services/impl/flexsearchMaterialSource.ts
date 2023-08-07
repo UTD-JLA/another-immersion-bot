@@ -1,8 +1,5 @@
-import {
-  ILoggerService,
-  IMaterialSourceService,
-  MaterialResult,
-} from '../interfaces';
+import {ILoggerService, IMaterialSourceService} from '../interfaces';
+import {MaterialResult} from '../interfaces/materialSourceService';
 import {MaterialLanguage} from '../../models/material';
 import {readdir, readFile} from 'fs/promises';
 import {inject, injectable} from 'inversify';
