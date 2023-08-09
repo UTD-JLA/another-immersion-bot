@@ -15,7 +15,11 @@ import {
   getMonthsInRangeByTimezone,
   getDaysInRangeByTimezone,
 } from '../util/time';
-import {IActivityService, ILocalizationService} from '../services/interfaces';
+import {
+  IActivityService,
+  ILocalizationService,
+  ILoggerService,
+} from '../services/interfaces';
 import {Stream} from 'stream';
 import {HttpClient} from '../util/httpClient';
 
@@ -35,8 +39,14 @@ export default class ChartCommand implements ICommand {
     @inject('UserConfigService') userService: IUserConfigService,
     @inject('GuildConfigService') guildService: IGuildConfigService,
     @inject('ActivityService') activityService: IActivityService,
-    @inject('LocalizationService') localizationService: ILocalizationService
+    @inject('LocalizationService') localizationService: ILocalizationService,
+    @inject('LoggerService') loggerService: ILoggerService
   ) {
+    if (!config.useQuickChart)
+      loggerService.warn(
+        'The chart service is deprecated and will be removed in a future release. Please use quickchart instead.'
+      );
+
     this._url = new URL(
       config.useQuickChart ? config.quickChartUrl : config.chartServiceUrl
     );
