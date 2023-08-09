@@ -12,6 +12,8 @@ import {
   parseTimeWithUserTimezone,
   calculateDeltaInDays,
   getUserTimezone,
+  getMonthsInRangeByTimezone,
+  getDaysInRangeByTimezone,
 } from '../util/time';
 import {IActivityService, ILocalizationService} from '../services/interfaces';
 import {Stream} from 'stream';
@@ -379,8 +381,7 @@ export default class ChartCommand implements ICommand {
     const buckets = new Map<string, number>();
 
     for (const [dateString, minutes] of activities) {
-      const date = new Date(dateString);
-      const dateKey = date.toISOString().slice(0, significantDatePart);
+      const dateKey = dateString.slice(0, significantDatePart);
 
       if (!buckets.has(dateKey)) {
         buckets.set(dateKey, 0);
@@ -390,18 +391,15 @@ export default class ChartCommand implements ICommand {
     }
 
     // reindex the bucket keys to include missing dates
-    const date = new Date(beginningDate);
-    while (date.getTime() <= endDate.getTime()) {
-      const dateKey = date.toISOString().slice(0, significantDatePart);
+    const completeKeySet =
+      effectiveSpan === 'yearly'
+        ? getMonthsInRangeByTimezone(beginningDate, endDate, timezone)
+        : getDaysInRangeByTimezone(beginningDate, endDate, timezone);
 
-      if (!buckets.has(dateKey)) {
-        buckets.set(dateKey, 0);
+    for (const key of completeKeySet) {
+      if (!buckets.has(key)) {
+        buckets.set(key, 0);
       }
-
-      // make sure not to jump over a whole month
-      // but if we are only indexing by month, there is
-      // no need to check every day
-      date.setDate(date.getDate() + (significantDatePart === 7 ? 28 : 1));
     }
 
     const [x, y] = Array.from(buckets.entries())

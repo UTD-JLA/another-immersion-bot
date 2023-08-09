@@ -25,6 +25,42 @@ export async function getUserTimezone(
   return userTz ?? guildConfig?.timezone ?? defaultTz;
 }
 
+export function getMonthsInRangeByTimezone(
+  start: Date,
+  end: Date,
+  timezone: string
+): string[] {
+  const months = [];
+  const startMoment = moment.tz(start, timezone);
+  const endMoment = moment.tz(end, timezone);
+
+  while (startMoment.isSameOrBefore(endMoment)) {
+    months.push(startMoment.format('YYYY-MM'));
+    startMoment.add(1, 'month');
+  }
+
+  return months;
+}
+
+export function getDaysInRangeByTimezone(
+  start: Date,
+  end: Date,
+  timezone: string
+): string[] {
+  const days = [];
+  const startMoment = moment.tz(start, timezone);
+  const endMoment = moment.tz(end, timezone);
+
+  console.log(startMoment.format(), endMoment.format());
+
+  while (startMoment.isSameOrBefore(endMoment)) {
+    days.push(startMoment.format('YYYY-MM-DD'));
+    startMoment.add(1, 'day');
+  }
+
+  return days;
+}
+
 export async function parseTimeWithUserTimezone(
   userService: IUserConfigService,
   guildService: IGuildConfigService,
