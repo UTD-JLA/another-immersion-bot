@@ -51,8 +51,6 @@ export function getDaysInRangeByTimezone(
   const startMoment = moment.tz(start, timezone);
   const endMoment = moment.tz(end, timezone);
 
-  console.log(startMoment.format(), endMoment.format());
-
   while (startMoment.isSameOrBefore(endMoment)) {
     days.push(startMoment.format('YYYY-MM-DD'));
     startMoment.add(1, 'day');
