@@ -8,6 +8,7 @@ import {
   ActionRowBuilder,
   ComponentType,
   ButtonInteraction,
+  SlashCommandBuilder,
 } from 'discord.js';
 import {ICommand} from '.';
 import {ActivityType, ActivityUnit, IActivity} from '../models/activity';
@@ -129,7 +130,7 @@ export default class LogCommand implements ICommand {
     );
   }
 
-  public get data() {
+  public get data(): SlashCommandBuilder {
     return getCommandBuilder(this._localizationService);
   }
 
